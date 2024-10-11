@@ -3,12 +3,13 @@ import { SteamService } from './steam.service';
 import { SteamController } from './steam.controller';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Global()
 @Module({
-  providers: [SteamService], // Add SteamGuard to providers
+  providers: [SteamService],
   controllers: [SteamController],
-  exports: [SteamService], // Export SteamGuard
+  exports: [SteamService],
   imports: [
     HttpModule.registerAsync({
       imports: [ConfigModule],
@@ -21,6 +22,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       }),
       inject: [ConfigService],
     }),
+    ScheduleModule.forRoot(),
   ],
 })
 export class SteamModule {}

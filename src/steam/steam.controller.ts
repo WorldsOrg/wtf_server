@@ -6,7 +6,9 @@ export class SteamController {
   constructor(private readonly steamService: SteamService) {}
 
   @Get('/')
-  get() {
-    return 'hi';
+  async get() {
+    const response =
+      await this.steamService.getPlayTimeData('76561199556121254');
+    return response;
   }
 }
