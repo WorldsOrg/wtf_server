@@ -7,8 +7,7 @@ export class SteamController {
 
   @Get('/')
   async get() {
-    const response =
-      await this.steamService.getPlayTimeData('76561199556121254');
+    const response = await this.steamService.rewardLootBox('76561199556121254');
     return response;
   }
 }
