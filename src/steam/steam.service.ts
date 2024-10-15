@@ -218,7 +218,7 @@ export class SteamService {
         }
         return;
       }
-
+      console.log('SteamId currently farming: ', steamId);
       const totalFarmingTime = await this.getTotalFarmingTime(steamId);
 
       await this.setCurrentFarmingTime(steamId, currentPlayTime);
