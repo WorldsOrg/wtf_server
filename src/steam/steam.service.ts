@@ -232,7 +232,7 @@ export class SteamService {
         );
         await this.setTotalFarmingTime(
           steamId,
-          totalFarmingTime + currentPlayTime + currentFarmingTime,
+          totalFarmingTime + 30 - currentFarmingTime,
         );
       } else {
         console.log(`${steamId} current play time:`, currentPlayTime);
