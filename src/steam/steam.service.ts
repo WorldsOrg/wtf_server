@@ -218,14 +218,31 @@ export class SteamService {
         }
         return;
       }
-      console.log(`${steamId} current play time:`, currentPlayTime);
-      const totalFarmingTime = await this.getTotalFarmingTime(steamId);
 
-      await this.setCurrentFarmingTime(steamId, currentPlayTime);
-      await this.setTotalFarmingTime(
-        steamId,
-        totalFarmingTime + currentPlayTime - currentFarmingTime,
-      );
+      const totalFarmingTime = await this.getTotalFarmingTime(steamId);
+      // every 30 minutes of playtime the steam api resets what it returns for playtime_current_session by 30 minutes
+      if (currentPlayTime < currentFarmingTime) {
+        console.log(
+          `${steamId} current play time:`,
+          currentPlayTime + currentFarmingTime,
+        );
+        await this.setCurrentFarmingTime(
+          steamId,
+          currentPlayTime + currentFarmingTime,
+        );
+        await this.setTotalFarmingTime(
+          steamId,
+          totalFarmingTime + currentPlayTime + currentFarmingTime,
+        );
+      } else {
+        console.log(`${steamId} current play time:`, currentPlayTime);
+
+        await this.setCurrentFarmingTime(steamId, currentPlayTime);
+        await this.setTotalFarmingTime(
+          steamId,
+          totalFarmingTime + currentPlayTime - currentFarmingTime,
+        );
+      }
     } catch (error) {
       console.error(
         `Error updating farming times for steamId ${steamId}:`,
