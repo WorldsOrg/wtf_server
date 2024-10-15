@@ -7,7 +7,6 @@ export class SteamController {
 
   @Get('/')
   async get() {
-    const response = await this.steamService.rewardLootBox('76561199556121254');
-    return response;
+    return 'hello';
   }
 }
