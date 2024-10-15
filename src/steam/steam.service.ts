@@ -221,19 +221,14 @@ export class SteamService {
 
       const totalFarmingTime = await this.getTotalFarmingTime(steamId);
       // every 30 minutes of playtime the steam api resets what it returns for playtime_current_session by 30 minutes
-      if (currentPlayTime < currentFarmingTime) {
+      if (currentPlayTime <= currentFarmingTime) {
         console.log(
           `${steamId} current play time:`,
           currentPlayTime + currentFarmingTime,
         );
-        await this.setCurrentFarmingTime(
-          steamId,
-          currentPlayTime + currentFarmingTime,
-        );
-        await this.setTotalFarmingTime(
-          steamId,
-          totalFarmingTime + 30 - currentFarmingTime,
-        );
+        // since the script runs every 30 minutes, we can just add 30 minutes to the current play time
+        await this.setCurrentFarmingTime(steamId, currentPlayTime + 30);
+        await this.setTotalFarmingTime(steamId, totalFarmingTime + 30);
       } else {
         console.log(`${steamId} current play time:`, currentPlayTime);
 
