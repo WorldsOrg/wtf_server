@@ -227,7 +227,7 @@ export class SteamService {
           currentPlayTime + currentFarmingTime,
         );
         // since the script runs every 30 minutes, we can just add 30 minutes to the current play time
-        await this.setCurrentFarmingTime(steamId, currentPlayTime + 30);
+        await this.setCurrentFarmingTime(steamId, currentFarmingTime + 30);
         await this.setTotalFarmingTime(steamId, totalFarmingTime + 30);
       } else {
         console.log(`${steamId} current play time:`, currentPlayTime);
