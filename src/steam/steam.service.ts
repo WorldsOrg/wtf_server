@@ -218,7 +218,7 @@ export class SteamService {
         }
         return;
       }
-      console.log('SteamId currently farming: ', steamId);
+      console.log(`${steamId} current play time:`, currentPlayTime);
       const totalFarmingTime = await this.getTotalFarmingTime(steamId);
 
       await this.setCurrentFarmingTime(steamId, currentPlayTime);
@@ -260,7 +260,7 @@ export class SteamService {
           error.message,
         );
       }
-      console.log('Finished farming cron job');
     }
+    console.log('Finished farming cron job');
   }
 }
