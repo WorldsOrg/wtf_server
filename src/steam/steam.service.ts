@@ -220,15 +220,15 @@ export class SteamService {
       }
 
       const totalFarmingTime = await this.getTotalFarmingTime(steamId);
-      // every 30 minutes of playtime the steam api resets what it returns for playtime_current_session by 30 minutes
+      // every 10 minutes of playtime the steam api resets what it returns for playtime_current_session by 30 minutes
       if (currentPlayTime <= currentFarmingTime) {
         console.log(
           `${steamId} current farming time:`,
-          currentFarmingTime + 30,
+          currentFarmingTime + 10,
         );
-        // since the script runs every 30 minutes, we can just add 30 minutes to the current play time
-        await this.setCurrentFarmingTime(steamId, currentFarmingTime + 30);
-        await this.setTotalFarmingTime(steamId, totalFarmingTime + 30);
+        // since the script runs every 30 minutes, we can just add 10 minutes to the current play time
+        await this.setCurrentFarmingTime(steamId, currentFarmingTime + 10);
+        await this.setTotalFarmingTime(steamId, totalFarmingTime + 10);
       } else {
         console.log(`${steamId} current farming time:`, currentPlayTime);
 
@@ -247,8 +247,8 @@ export class SteamService {
     }
   }
 
-  // run every 30 minutes
-  @Cron('*/30 * * * *')
+  // run every 10 minutes
+  @Cron('*/10 * * * *')
   async update() {
     console.log('Running farming cron job');
     const steamIds = await this.getSteamIds();
