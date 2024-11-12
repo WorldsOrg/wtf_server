@@ -2,7 +2,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import axios from 'axios';
-import { Cron } from '@nestjs/schedule';
+// import { Cron } from '@nestjs/schedule';
 import { catchError, lastValueFrom } from 'rxjs';
 
 @Injectable()
@@ -248,7 +248,7 @@ export class SteamService {
   }
 
   // run every 10 minutes
-  @Cron('*/10 * * * *')
+  // @Cron('*/10 * * * *')
   async update() {
     console.log('Running farming cron job');
     const steamIds = await this.getSteamIds();
