@@ -7,6 +7,6 @@ export class AsfController {
 
   @Get('/')
   async get() {
-    return this.asfService.getBotStatus(0);
+    return this.asfService.getBotNames(0);
   }
 }

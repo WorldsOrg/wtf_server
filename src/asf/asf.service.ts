@@ -35,13 +35,66 @@ export class AsfService {
     return instances;
   }
 
-  async getBotStatus(botIndex: number): Promise<string> {
+  async getBotStatus(asfIndex: number): Promise<string> {
     try {
-      const response = await this.axiosInstances[botIndex].get('/ASF');
+      const response = await this.axiosInstances[asfIndex].get('/ASF');
       return response.data;
     } catch (error) {
-      console.error('Error fetching bot status:', error.message);
+      console.error(
+        `Error fetching ${this.asf_apis[asfIndex]} status:`,
+        error.message,
+      );
       throw new Error('Failed to fetch bot status');
+    }
+  }
+
+  private extractBotNames(result: string): string {
+    const botNamePattern = /<([^>]+)>/g;
+    const botNames = [];
+    let match;
+
+    while ((match = botNamePattern.exec(result)) !== null) {
+      botNames.push(match[1]);
+    }
+
+    return botNames.join(',');
+  }
+
+  /*
+   * This function fetches the bot names from ASF and returns them as a comma-separated string.
+   */
+  async getBotNames(asfIndex: number): Promise<string> {
+    try {
+      const response = await this.axiosInstances[asfIndex].post('/Command', {
+        Command: 'status ASF',
+      });
+      const result = response.data.Result;
+      const botNames = this.extractBotNames(result);
+      return botNames;
+    } catch (error) {
+      console.error(
+        `Error fetching bot names for ${this.asf_apis[asfIndex]}:`,
+        error.message,
+      );
+      throw new Error('Failed to fetch bot names');
+    }
+  }
+
+  async stopBots(asfIndex: number, botNames: string): Promise<void> {
+    try {
+      await this.axiosInstances[asfIndex].post(`/Bot/${botNames}/Stop`);
+    } catch (error) {
+      console.error(`Error stopping ${botNames}:`, error.message);
+      throw new Error('Failed to stop bot');
+    }
+  }
+
+  async startBots(asfIndex: number, botNames: string): Promise<void> {
+    try {
+      await this.axiosInstances[asfIndex].post(`/Bot/${botNames}/Start`);
+    } catch (error) {
+      console.error(`Error starting ${botNames}:`, error.message);
+      throw new Error('Failed to start bot');
     }
   }
 }
