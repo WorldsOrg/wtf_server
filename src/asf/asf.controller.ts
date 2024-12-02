@@ -7,6 +7,7 @@ export class AsfController {
 
   @Get('/')
   async get() {
-    return this.asfService.getBotNames(0);
+    const names = await this.asfService.getBotNames(0);
+    return this.asfService.stopBots(0, names);
   }
 }
