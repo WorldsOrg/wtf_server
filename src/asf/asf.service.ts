@@ -18,8 +18,13 @@ export class AsfService {
   private disabled_bots: Bot[] = [];
 
   constructor() {
-    this.asf_apis = ['https://asf-bots-production.up.railway.app/Api'];
-    this.asf_passwords = ['hi'];
+    this.asf_apis = [
+      'https://asf-bots-production.up.railway.app/bots/Api',
+      'https://asf2-production.up.railway.app/Api',
+      'https://asf3-production.up.railway.app/Api',
+      'https://asf4-production.up.railway.app/Api',
+    ];
+    this.asf_passwords = ['hi', 'hi', 'hi', 'hi'];
     this.axiosInstances = this.createAxiosInstances();
 
     (async () => {
@@ -48,6 +53,14 @@ export class AsfService {
     return instances;
   }
 
+  private shuffleArray(array: any[]): any[] {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
   private async initializeBotArray() {
     for (let i = 0; i < this.axiosInstances.length; i++) {
       const botNames = await this.getBotNames(i);
@@ -59,6 +72,9 @@ export class AsfService {
         this.disabled_bots.push({ name, asfInstanceIndex: i }),
       );
     }
+
+    // Shuffle the bots array to ensure random distribution
+    this.bots = this.shuffleArray(this.bots);
 
     // Start half of the bots and stop the other half
     const halfBots = Math.floor(this.bots.length / 2);
@@ -196,32 +212,56 @@ export class AsfService {
     return Math.floor(Math.random() * 5000) + 1000; // Random delay between 1 and 5 seconds
   }
 
-  @Cron('*/1 * * * *') // Every 10 seconds for demonstration purposes
+  @Cron('*/15 * * * *') // Every 15 minutes
   async handleBotManagement() {
     console.log('Managing bots');
     const peakHours = [7, 13, 18]; // Peak hours
-    const dipHours = [1, 11, 21]; // Dip hours
+    const dipHours = [1, 6, 11, 17, 21]; // Dip hours
     const currentHour = new Date().getHours();
 
-    let scalingFactor = 1; // Default scaling factor
+    let botsToStart = 0;
+    let botsToStop = 0;
 
     if (peakHours.includes(currentHour)) {
-      scalingFactor = 3; // Higher scaling factor during peak hours
+      const options = [
+        { start: 63, stop: 0 },
+        { start: 58, stop: 0 },
+        { start: 67, stop: 0 },
+        { start: 54, stop: 0 },
+      ];
+      const choice = options[Math.floor(Math.random() * options.length)];
+      botsToStart = choice.start;
+      botsToStop = choice.stop;
     } else if (dipHours.includes(currentHour)) {
-      scalingFactor = 0.5; // Lower scaling factor during dip hours
+      const options = [
+        { start: 0, stop: 61 },
+        { start: 0, stop: 59 },
+        { start: 0, stop: 55 },
+        { start: 0, stop: 68 },
+      ];
+      const choice = options[Math.floor(Math.random() * options.length)];
+      botsToStart = choice.start;
+      botsToStop = choice.stop;
+    } else {
+      const options = [
+        { start: 34, stop: 0 },
+        { start: 0, stop: 27 },
+        { start: 31, stop: 0 },
+        { start: 0, stop: 23 },
+        { start: 23, stop: 0 },
+        { start: 0, stop: 28 },
+        { start: 38, stop: 0 },
+        { start: 0, stop: 41 },
+      ];
+      const choice = options[Math.floor(Math.random() * options.length)];
+      botsToStart = choice.start;
+      botsToStop = choice.stop;
     }
 
-    const botsToStart = Math.ceil(
-      (this.disabled_bots.length * scalingFactor) / 10,
-    ); // Adjust the number of bots to start
-    const botsToStop = Math.ceil(
-      (this.running_bots.length * (1 - scalingFactor)) / 10,
-    ); // Adjust the number of bots to stop
+    console.log(`Starting ${botsToStart} bots, stopping ${botsToStop} bots`);
 
-    console.log(botsToStart, botsToStop);
-
-    if (scalingFactor >= 1) {
-      // Start more bots during peak hours
+    if (botsToStart > 0) {
+      // Start bots
       const botsByInstance: { [key: number]: string[] } = {};
       for (let i = 0; i < botsToStart; i++) {
         const bot =
@@ -238,8 +278,10 @@ export class AsfService {
         await this.startBots(Number(instanceIndex), botNames);
         await this.delay(this.getRandomDelay());
       }
-    } else {
-      // Stop some bots during off-peak hours
+    }
+
+    if (botsToStop > 0) {
+      // Stop bots
       const botsByInstance: { [key: number]: string[] } = {};
       for (let i = 0; i < botsToStop; i++) {
         const bot =
@@ -257,6 +299,7 @@ export class AsfService {
         await this.delay(this.getRandomDelay());
       }
     }
+
     console.log('disabled :', this.disabled_bots.length);
     console.log('running :', this.running_bots.length);
   }
