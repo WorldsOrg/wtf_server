@@ -183,7 +183,10 @@ export class SteamService {
           params: { steamid: steamId },
         },
       );
-      return data.response.playtime_current_session;
+      const playtime = data.response.playtime_current_session
+        ? data.response.playtime_current_session
+        : 0;
+      return playtime;
     } catch (error) {
       console.error('Error fetching play time data:', error.message);
       throw new Error('Failed to fetch play time data');
