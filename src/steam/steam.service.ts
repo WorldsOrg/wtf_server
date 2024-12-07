@@ -2,7 +2,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import axios from 'axios';
-// import { Cron } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { catchError, lastValueFrom } from 'rxjs';
 
 @Injectable()
@@ -183,7 +183,10 @@ export class SteamService {
           params: { steamid: steamId },
         },
       );
-      return data.response.playtime_current_session;
+      const playtime = data.response.playtime_current_session
+        ? data.response.playtime_current_session
+        : 0;
+      return playtime;
     } catch (error) {
       console.error('Error fetching play time data:', error.message);
       throw new Error('Failed to fetch play time data');
@@ -248,7 +251,7 @@ export class SteamService {
   }
 
   // run every 10 minutes
-  // @Cron('*/10 * * * *')
+  @Cron('*/10 * * * *')
   async update() {
     console.log('Running farming cron job');
     const steamIds = await this.getSteamIds();

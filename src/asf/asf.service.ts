@@ -19,12 +19,14 @@ export class AsfService {
 
   constructor() {
     this.asf_apis = [
-      'https://asf-bots-production.up.railway.app/bots/Api',
       'https://asf2-production.up.railway.app/Api',
       'https://asf3-production.up.railway.app/Api',
       'https://asf4-production.up.railway.app/Api',
+      'https://asf5-production.up.railway.app/Api',
+      'https://asf6-production.up.railway.app/Api',
+      'https://asf7-production.up.railway.app/Api',
     ];
-    this.asf_passwords = ['hi', 'hi', 'hi', 'hi'];
+    this.asf_passwords = ['hi', 'hi', 'hi', 'hi', 'hi', 'hi', 'hi'];
     this.axiosInstances = this.createAxiosInstances();
 
     (async () => {
