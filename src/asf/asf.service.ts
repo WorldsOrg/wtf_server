@@ -217,92 +217,117 @@ export class AsfService {
   @Cron('*/15 * * * *') // Every 15 minutes
   async handleBotManagement() {
     console.log('Managing bots');
-    const peakHours = [7, 13, 18]; // Peak hours
-    const dipHours = [1, 6, 11, 17, 21]; // Dip hours
+    const peakHours = [7, 13, 20]; // Peak hours
+    const dipHours = [1, 6, 16]; // Dip hours
     const currentHour = new Date().getHours();
 
     let botsToStart = 0;
     let botsToStop = 0;
 
-    if (peakHours.includes(currentHour)) {
-      const options = [
-        { start: 63, stop: 0 },
-        { start: 58, stop: 0 },
-        { start: 67, stop: 0 },
-        { start: 54, stop: 0 },
-      ];
-      const choice = options[Math.floor(Math.random() * options.length)];
-      botsToStart = choice.start;
-      botsToStop = choice.stop;
-    } else if (dipHours.includes(currentHour)) {
-      const options = [
-        { start: 0, stop: 61 },
-        { start: 0, stop: 59 },
-        { start: 0, stop: 55 },
-        { start: 0, stop: 68 },
-      ];
-      const choice = options[Math.floor(Math.random() * options.length)];
-      botsToStart = choice.start;
-      botsToStop = choice.stop;
-    } else {
-      const options = [
-        { start: 34, stop: 0 },
-        { start: 0, stop: 27 },
-        { start: 31, stop: 0 },
-        { start: 0, stop: 23 },
-        { start: 23, stop: 0 },
-        { start: 0, stop: 28 },
-        { start: 38, stop: 0 },
-        { start: 0, stop: 41 },
-      ];
-      const choice = options[Math.floor(Math.random() * options.length)];
-      botsToStart = choice.start;
-      botsToStop = choice.stop;
-    }
+    try {
+      if (peakHours.includes(currentHour)) {
+        const options = [
+          { start: 63, stop: 0 },
+          { start: 58, stop: 0 },
+          { start: 67, stop: 0 },
+          { start: 54, stop: 0 },
+        ];
+        const choice = options[Math.floor(Math.random() * options.length)];
+        botsToStart = choice.start;
+        botsToStop = choice.stop;
+      } else if (dipHours.includes(currentHour)) {
+        const options = [
+          { start: 0, stop: 61 },
+          { start: 0, stop: 59 },
+          { start: 0, stop: 55 },
+          { start: 0, stop: 68 },
+        ];
+        const choice = options[Math.floor(Math.random() * options.length)];
+        botsToStart = choice.start;
+        botsToStop = choice.stop;
+      } else {
+        const options = [
+          { start: 8, stop: 0 },
+          { start: 0, stop: 8 },
+          { start: 7, stop: 0 },
+          { start: 0, stop: 7 },
+          { start: 6, stop: 0 },
+          { start: 0, stop: 6 },
+        ];
+        const choice = options[Math.floor(Math.random() * options.length)];
+        botsToStart = choice.start;
+        botsToStop = choice.stop;
+      }
 
-    console.log(`Starting ${botsToStart} bots, stopping ${botsToStop} bots`);
+      if (this.running_bots.length < botsToStop) {
+        botsToStart = 75;
+      }
+      if (this.disabled_bots.length < botsToStart) {
+        botsToStop = 25;
+      }
 
-    if (botsToStart > 0) {
-      // Start bots
-      const botsByInstance: { [key: number]: string[] } = {};
-      for (let i = 0; i < botsToStart; i++) {
-        const bot =
-          this.disabled_bots[
-            Math.floor(Math.random() * this.disabled_bots.length)
-          ];
-        if (!botsByInstance[bot.asfInstanceIndex]) {
-          botsByInstance[bot.asfInstanceIndex] = [];
+      console.log(`Starting ${botsToStart} bots, stopping ${botsToStop} bots`);
+
+      const interval = (15 * 60 * 1000) / Math.max(botsToStart, botsToStop); // Interval in milliseconds
+
+      if (botsToStart > 0) {
+        // Start bots gradually
+        const botsByInstance: { [key: number]: string[] } = {};
+        for (let i = 0; i < botsToStart; i++) {
+          const bot =
+            this.disabled_bots[
+              Math.floor(Math.random() * this.disabled_bots.length)
+            ];
+          if (!botsByInstance[bot.asfInstanceIndex]) {
+            botsByInstance[bot.asfInstanceIndex] = [];
+          }
+          botsByInstance[bot.asfInstanceIndex].push(bot.name);
         }
-        botsByInstance[bot.asfInstanceIndex].push(bot.name);
-      }
-      for (const instanceIndex in botsByInstance) {
-        const botNames = botsByInstance[instanceIndex].join(',');
-        await this.startBots(Number(instanceIndex), botNames);
-        await this.delay(this.getRandomDelay());
-      }
-    }
-
-    if (botsToStop > 0) {
-      // Stop bots
-      const botsByInstance: { [key: number]: string[] } = {};
-      for (let i = 0; i < botsToStop; i++) {
-        const bot =
-          this.running_bots[
-            Math.floor(Math.random() * this.running_bots.length)
-          ];
-        if (!botsByInstance[bot.asfInstanceIndex]) {
-          botsByInstance[bot.asfInstanceIndex] = [];
+        for (const instanceIndex in botsByInstance) {
+          const botNames = botsByInstance[instanceIndex].join(',');
+          try {
+            await this.startBots(Number(instanceIndex), botNames);
+          } catch (error) {
+            console.error(
+              `Error starting bots for instance ${instanceIndex}:`,
+              error.message,
+            );
+          }
+          await this.delay(interval);
         }
-        botsByInstance[bot.asfInstanceIndex].push(bot.name);
       }
-      for (const instanceIndex in botsByInstance) {
-        const botNames = botsByInstance[instanceIndex].join(',');
-        await this.stopBots(Number(instanceIndex), botNames);
-        await this.delay(this.getRandomDelay());
-      }
-    }
 
-    console.log('disabled :', this.disabled_bots.length);
-    console.log('running :', this.running_bots.length);
+      if (botsToStop > 0) {
+        // Stop bots gradually
+        const botsByInstance: { [key: number]: string[] } = {};
+        for (let i = 0; i < botsToStop; i++) {
+          const bot =
+            this.running_bots[
+              Math.floor(Math.random() * this.running_bots.length)
+            ];
+          if (!botsByInstance[bot.asfInstanceIndex]) {
+            botsByInstance[bot.asfInstanceIndex] = [];
+          }
+          botsByInstance[bot.asfInstanceIndex].push(bot.name);
+        }
+        for (const instanceIndex in botsByInstance) {
+          const botNames = botsByInstance[instanceIndex].join(',');
+          try {
+            await this.stopBots(Number(instanceIndex), botNames);
+          } catch (error) {
+            console.error(
+              `Error stopping bots for instance ${instanceIndex}:`,
+              error.message,
+            );
+          }
+          await this.delay(interval);
+        }
+      }
+
+      console.log('disabled :', this.disabled_bots.length);
+      console.log('running :', this.running_bots.length);
+    } catch (error) {
+      console.error('Error managing bots:', error.message);
+    }
   }
 }
