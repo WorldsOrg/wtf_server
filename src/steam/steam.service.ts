@@ -1,14 +1,14 @@
 // src/steam/steam.service.ts
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import axios from 'axios';
 import { Cron } from '@nestjs/schedule';
-import { catchError, lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class SteamService {
-  private readonly lootboxTemplateId = '1003';
+  private readonly lootBoxTemplateId = '1004';
   private readonly awardTime: number = Number(process.env.AWARD_TIME);
+  public userItemsDataTableName: string = 'wtf_steam_user_item_data';
 
   constructor(private readonly httpService: HttpService) {}
 
@@ -152,27 +152,45 @@ export class SteamService {
     }
   }
 
-  async rewardLootBox(steamId: string) {
-    const itemdefidParams = {};
-    itemdefidParams[`itemdefid[0]`] = this.lootboxTemplateId;
+  async getUserItemInventoryByTemplateId(steamId: string, templateId: string) {
+    const query = `SELECT *
+      FROM ${this.userItemsDataTableName}
+      WHERE steam_id = '${steamId}'
+      AND template_id = '${templateId}';
+    `;
+    const data = await this.api.post('table/executeselectquery', {
+      query,
+    });
+    return data.data;
+  }
 
-    const request = this.httpService
-      .post(
-        '/IInventoryService/AddItem/v1',
-        {},
-        {
-          params: { steamid: steamId, ...itemdefidParams, notify: true },
-        },
-      )
-      .pipe(
-        catchError(() => {
-          throw new InternalServerErrorException(
-            'Error when fetching steam API',
-          );
-        }),
+  async giveUserEgg(steamId: string) {
+    try {
+      const userEggs = await this.getUserItemInventoryByTemplateId(
+        steamId,
+        this.lootBoxTemplateId,
       );
-    const response = await lastValueFrom(request);
-    return response.data;
+      if (userEggs.length > 0) {
+        await this.api.put('/table/updatedata', {
+          data: { quantity: Number(userEggs[0].quantity) + 1 },
+          tableName: this.userItemsDataTableName,
+          condition: `template_id = ${Number(this.lootBoxTemplateId)} AND steam_id = '${steamId}'`,
+        });
+      } else {
+        await this.api.post('/table/insertdata', {
+          data: {
+            steam_id: steamId,
+            template_id: Number(this.lootBoxTemplateId),
+            quantity: 1,
+          },
+          tableName: this.userItemsDataTableName,
+        });
+      }
+      return true;
+    } catch (error) {
+      console.error('Error giving user egg:', error);
+      return false;
+    }
   }
 
   async getPlayTimeData(steamId: string) {
@@ -262,7 +280,7 @@ export class SteamService {
           await this.updateFarmingTimes(steamId);
           if (await this.isRewardTime(steamId)) {
             console.log('Rewarding loot box for steamId:', steamId);
-            await this.rewardLootBox(steamId);
+            await this.giveUserEgg(steamId);
             await this.setNumFarmingRewards(
               steamId,
               (await this.getNumFarmingRewards(steamId)) + 1,
