@@ -23,7 +23,7 @@ export class AsfService {
       'https://asf3-production.up.railway.app/Api',
       'https://asf4-production.up.railway.app/Api',
       'https://asf5-production.up.railway.app/Api',
-      'https://asf6-production.up.railway.app/Api',
+      'https://asf8-production.up.railway.app/Api',
       'https://asf7-production.up.railway.app/Api',
     ];
     this.asf_passwords = ['hi', 'hi', 'hi', 'hi', 'hi', 'hi', 'hi'];
@@ -217,115 +217,83 @@ export class AsfService {
   @Cron('*/15 * * * *') // Every 15 minutes
   async handleBotManagement() {
     console.log('Managing bots');
-    const peakHours = [7, 13, 20]; // Peak hours
-    const dipHours = [1, 6, 16]; // Dip hours
-    const currentHour = new Date().getHours();
 
-    let botsToStart = 0;
-    let botsToStop = 0;
+    // Define the percentage of bots active for each hour (24 values for 24 hours)
+    const hourlyBotPercentages = [
+      0.1, // Midnight
+      0.05, // 1 AM
+      0.04, // 2 AM
+      0.03, // 3 AM
+      0.02, // 4 AM
+      0.03, // 5 AM
+      0.08, // 6 AM
+      0.2, // 7 AM
+      0.4, // 8 AM
+      0.6, // 9 AM
+      0.8, // 10 AM
+      1.0, // 11 AM
+      0.9, // Noon
+      0.8, // 1 PM
+      0.7, // 2 PM
+      0.6, // 3 PM
+      0.5, // 4 PM
+      0.4, // 5 PM
+      0.3, // 6 PM
+      0.5, // 7 PM
+      0.7, // 8 PM
+      0.9, // 9 PM
+      0.6, // 10 PM
+      0.3, // 11 PM
+    ];
+
+    const currentHour = new Date().getHours();
+    const maxBots = 600;
+
+    // Calculate the target number of active bots based on the current hour
+    const targetBots = Math.round(maxBots * hourlyBotPercentages[currentHour]);
+
+    const currentActiveBots = this.running_bots.length;
+    const botsToStart = Math.max(0, targetBots - currentActiveBots);
+    const botsToStop = Math.max(0, currentActiveBots - targetBots);
+
+    // Log the current status
+    console.log(
+      `Current Hour: ${currentHour}, Target Bots: ${targetBots}, Current Active: ${currentActiveBots}`,
+    );
+    console.log(`Bots to Start: ${botsToStart}, Bots to Stop: ${botsToStop}`);
+
+    // Smooth transition by dividing the interval evenly
+    const interval = (15 * 60 * 1000) / (botsToStart + botsToStop || 1);
 
     try {
-      if (peakHours.includes(currentHour)) {
-        const options = [
-          { start: 63, stop: 0 },
-          { start: 58, stop: 0 },
-          { start: 67, stop: 0 },
-          { start: 54, stop: 0 },
-        ];
-        const choice = options[Math.floor(Math.random() * options.length)];
-        botsToStart = choice.start;
-        botsToStop = choice.stop;
-      } else if (dipHours.includes(currentHour)) {
-        const options = [
-          { start: 0, stop: 61 },
-          { start: 0, stop: 59 },
-          { start: 0, stop: 55 },
-          { start: 0, stop: 68 },
-        ];
-        const choice = options[Math.floor(Math.random() * options.length)];
-        botsToStart = choice.start;
-        botsToStop = choice.stop;
-      } else {
-        const options = [
-          { start: 8, stop: 0 },
-          { start: 0, stop: 8 },
-          { start: 7, stop: 0 },
-          { start: 0, stop: 7 },
-          { start: 6, stop: 0 },
-          { start: 0, stop: 6 },
-        ];
-        const choice = options[Math.floor(Math.random() * options.length)];
-        botsToStart = choice.start;
-        botsToStop = choice.stop;
-      }
-
-      if (this.running_bots.length < botsToStop) {
-        botsToStart = 75;
-      }
-      if (this.disabled_bots.length < botsToStart) {
-        botsToStop = 25;
-      }
-
-      console.log(`Starting ${botsToStart} bots, stopping ${botsToStop} bots`);
-
-      const interval = (15 * 60 * 1000) / Math.max(botsToStart, botsToStop); // Interval in milliseconds
-
-      if (botsToStart > 0) {
-        // Start bots gradually
-        const botsByInstance: { [key: number]: string[] } = {};
-        for (let i = 0; i < botsToStart; i++) {
-          const bot =
-            this.disabled_bots[
-              Math.floor(Math.random() * this.disabled_bots.length)
-            ];
-          if (!botsByInstance[bot.asfInstanceIndex]) {
-            botsByInstance[bot.asfInstanceIndex] = [];
-          }
-          botsByInstance[bot.asfInstanceIndex].push(bot.name);
+      // Gradually start bots
+      for (let i = 0; i < botsToStart; i++) {
+        const bot =
+          this.disabled_bots[
+            Math.floor(Math.random() * this.disabled_bots.length)
+          ];
+        if (bot) {
+          await this.startBots(bot.asfInstanceIndex, bot.name);
         }
-        for (const instanceIndex in botsByInstance) {
-          const botNames = botsByInstance[instanceIndex].join(',');
-          try {
-            await this.startBots(Number(instanceIndex), botNames);
-          } catch (error) {
-            console.error(
-              `Error starting bots for instance ${instanceIndex}:`,
-              error.message,
-            );
-          }
-          await this.delay(interval);
-        }
+        await this.delay(interval);
       }
 
-      if (botsToStop > 0) {
-        // Stop bots gradually
-        const botsByInstance: { [key: number]: string[] } = {};
-        for (let i = 0; i < botsToStop; i++) {
-          const bot =
-            this.running_bots[
-              Math.floor(Math.random() * this.running_bots.length)
-            ];
-          if (!botsByInstance[bot.asfInstanceIndex]) {
-            botsByInstance[bot.asfInstanceIndex] = [];
-          }
-          botsByInstance[bot.asfInstanceIndex].push(bot.name);
+      // Gradually stop bots
+      for (let i = 0; i < botsToStop; i++) {
+        const bot =
+          this.running_bots[
+            Math.floor(Math.random() * this.running_bots.length)
+          ];
+        if (bot) {
+          await this.stopBots(bot.asfInstanceIndex, bot.name);
         }
-        for (const instanceIndex in botsByInstance) {
-          const botNames = botsByInstance[instanceIndex].join(',');
-          try {
-            await this.stopBots(Number(instanceIndex), botNames);
-          } catch (error) {
-            console.error(
-              `Error stopping bots for instance ${instanceIndex}:`,
-              error.message,
-            );
-          }
-          await this.delay(interval);
-        }
+        await this.delay(interval);
       }
 
-      console.log('disabled :', this.disabled_bots.length);
-      console.log('running :', this.running_bots.length);
+      // Log final counts
+      console.log('Updated Bot Counts:');
+      console.log('Running:', this.running_bots.length);
+      console.log('Disabled:', this.disabled_bots.length);
     } catch (error) {
       console.error('Error managing bots:', error.message);
     }
