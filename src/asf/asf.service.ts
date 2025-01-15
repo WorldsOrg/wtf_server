@@ -219,44 +219,94 @@ export class AsfService {
     console.log('Managing bots');
 
     const maxBots = 600; // Total bots available
-    const initialRunningBots = Math.floor(maxBots / 2); // Start with 50% bots running
-    const currentHour = new Date().getHours();
-    const currentMinute = new Date().getMinutes();
+    const lookupTable = [
+      0.5,
+      0.53,
+      0.57,
+      0.6,
+      0.63,
+      0.66,
+      0.69,
+      0.72, // Midnight - 3 AM
+      0.75,
+      0.78,
+      0.81,
+      0.84,
+      0.87,
+      0.9,
+      0.93,
+      0.96, // 3 AM - 6 AM
+      1.0,
+      0.96,
+      0.93,
+      0.9,
+      0.87,
+      0.84,
+      0.81,
+      0.78, // 6 AM - 9 AM
+      0.75,
+      0.72,
+      0.69,
+      0.66,
+      0.63,
+      0.6,
+      0.57,
+      0.53, // 9 AM - Noon
+      0.5,
+      0.47,
+      0.43,
+      0.4,
+      0.37,
+      0.34,
+      0.31,
+      0.28, // Noon - 3 PM
+      0.25,
+      0.22,
+      0.19,
+      0.16,
+      0.13,
+      0.1,
+      0.07,
+      0.04, // 3 PM - 6 PM
+      0.0,
+      0.04,
+      0.07,
+      0.1,
+      0.13,
+      0.16,
+      0.19,
+      0.22, // 6 PM - 9 PM
+      0.25,
+      0.28,
+      0.31,
+      0.34,
+      0.37,
+      0.4,
+      0.43,
+      0.47, // 9 PM - Midnight
+      0.5, // Midnight (same as the start value)
+    ];
 
-    // Define the sine wave parameters
-    const amplitude = maxBots / 2; // Half the total bots
-    const baseline = maxBots / 2; // Center of the wave
-    const phaseShift = -6; // Align peak hours with midday
-    const frequency = (2 * Math.PI) / 24; // One full wave over 24 hours
+    // Determine the current interval
+    const now = new Date();
+    const currentInterval =
+      now.getHours() * 4 + Math.floor(now.getMinutes() / 15);
 
-    // Calculate sine wave values for current and next time periods
-    const targetBotsThisHour = Math.round(
-      baseline + amplitude * Math.sin(frequency * (currentHour + phaseShift)),
-    );
+    // Determine the target percentage of active bots
+    const targetPercentage = lookupTable[currentInterval];
+    const targetBots = Math.round(maxBots * targetPercentage);
 
-    // Handle hour wrap-around smoothly
-    const nextHour = (currentHour + 1) % 24;
-    const targetBotsNextHour = Math.round(
-      baseline + amplitude * Math.sin(frequency * (nextHour + phaseShift)),
-    );
-
-    // Interpolate for the current 15-minute segment
-    const progress = currentMinute / 60; // Fraction of the hour that has passed
-    const targetBots = Math.round(
-      targetBotsThisHour + (targetBotsNextHour - targetBotsThisHour) * progress,
-    );
-
-    const currentActiveBots = this.running_bots.length || initialRunningBots;
+    const currentActiveBots = this.running_bots.length;
     const botsToStart = Math.max(0, targetBots - currentActiveBots);
     const botsToStop = Math.max(0, currentActiveBots - targetBots);
 
     // Log the current status
     console.log(
-      `Current Hour: ${currentHour}, Target Bots: ${targetBots}, Current Active: ${currentActiveBots}`,
+      `Current Interval: ${currentInterval}, Target Bots: ${targetBots}, Current Active: ${currentActiveBots}`,
     );
     console.log(`Bots to Start: ${botsToStart}, Bots to Stop: ${botsToStop}`);
 
-    // Spread adjustments over 15 minutes
+    // Smooth transition by dividing the interval evenly
     const interval = (15 * 60 * 1000) / (botsToStart + botsToStop || 1);
 
     try {
