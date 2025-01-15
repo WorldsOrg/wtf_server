@@ -218,41 +218,35 @@ export class AsfService {
   async handleBotManagement() {
     console.log('Managing bots');
 
-    // Define the percentage of bots active for each hour (24 values for 24 hours)
-    const hourlyBotPercentages = [
-      0.1, // Midnight
-      0.05, // 1 AM
-      0.04, // 2 AM
-      0.03, // 3 AM
-      0.02, // 4 AM
-      0.03, // 5 AM
-      0.08, // 6 AM
-      0.2, // 7 AM
-      0.4, // 8 AM
-      0.6, // 9 AM
-      0.8, // 10 AM
-      1.0, // 11 AM
-      0.9, // Noon
-      0.8, // 1 PM
-      0.7, // 2 PM
-      0.6, // 3 PM
-      0.5, // 4 PM
-      0.4, // 5 PM
-      0.3, // 6 PM
-      0.5, // 7 PM
-      0.7, // 8 PM
-      0.9, // 9 PM
-      0.6, // 10 PM
-      0.3, // 11 PM
-    ];
-
+    const maxBots = 600; // Total bots available
+    const initialRunningBots = Math.floor(maxBots / 2); // Start with 50% bots running
     const currentHour = new Date().getHours();
-    const maxBots = 600;
+    const currentMinute = new Date().getMinutes();
 
-    // Calculate the target number of active bots based on the current hour
-    const targetBots = Math.round(maxBots * hourlyBotPercentages[currentHour]);
+    // Define the sine wave parameters
+    const amplitude = maxBots / 2; // Half the total bots
+    const baseline = maxBots / 2; // Center of the wave
+    const phaseShift = -6; // Align peak hours with midday
+    const frequency = (2 * Math.PI) / 24; // One full wave over 24 hours
 
-    const currentActiveBots = this.running_bots.length;
+    // Calculate sine wave values for current and next time periods
+    const targetBotsThisHour = Math.round(
+      baseline + amplitude * Math.sin(frequency * (currentHour + phaseShift)),
+    );
+
+    // Handle hour wrap-around smoothly
+    const nextHour = (currentHour + 1) % 24;
+    const targetBotsNextHour = Math.round(
+      baseline + amplitude * Math.sin(frequency * (nextHour + phaseShift)),
+    );
+
+    // Interpolate for the current 15-minute segment
+    const progress = currentMinute / 60; // Fraction of the hour that has passed
+    const targetBots = Math.round(
+      targetBotsThisHour + (targetBotsNextHour - targetBotsThisHour) * progress,
+    );
+
+    const currentActiveBots = this.running_bots.length || initialRunningBots;
     const botsToStart = Math.max(0, targetBots - currentActiveBots);
     const botsToStop = Math.max(0, currentActiveBots - targetBots);
 
@@ -262,7 +256,7 @@ export class AsfService {
     );
     console.log(`Bots to Start: ${botsToStart}, Bots to Stop: ${botsToStop}`);
 
-    // Smooth transition by dividing the interval evenly
+    // Spread adjustments over 15 minutes
     const interval = (15 * 60 * 1000) / (botsToStart + botsToStop || 1);
 
     try {
