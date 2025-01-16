@@ -210,8 +210,17 @@ export class AsfService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  private getRandomDelay(): number {
-    return Math.floor(Math.random() * 5000) + 1000; // Random delay between 1 and 5 seconds
+  generateLookupTable(): number[] {
+    const lookupTable = [];
+    const totalIntervals = 96; // 24 hours * 4 intervals per hour
+
+    for (let i = 0; i < totalIntervals; i++) {
+      const radians = (i / totalIntervals) * 2 * Math.PI;
+      const value = Math.abs(0.5 + 0.5 * Math.sin(radians - Math.PI / 2)); // Sinusoidal wave from 0 to 1
+      lookupTable.push(value);
+    }
+
+    return lookupTable;
   }
 
   @Cron('*/15 * * * *') // Every 15 minutes
@@ -219,105 +228,7 @@ export class AsfService {
     console.log('Managing bots');
 
     const maxBots = 600; // Total bots available
-    const lookupTable = [
-      0.5,
-      0.53,
-      0.57,
-      0.6, // Midnight - 1 AM
-      0.63,
-      0.66,
-      0.69,
-      0.72, // 1 AM - 2 AM
-      0.75,
-      0.78,
-      0.81,
-      0.84, // 2 AM - 3 AM
-      0.87,
-      0.9,
-      0.93,
-      0.96, // 3 AM - 4 AM
-      1.0,
-      0.96,
-      0.93,
-      0.9, // 4 AM - 5 AM
-      0.87,
-      0.84,
-      0.81,
-      0.78, // 5 AM - 6 AM
-      0.75,
-      0.72,
-      0.69,
-      0.66, // 6 AM - 7 AM
-      0.63,
-      0.6,
-      0.57,
-      0.53, // 7 AM - 8 AM
-      0.5,
-      0.47,
-      0.43,
-      0.4, // 8 AM - 9 AM
-      0.37,
-      0.34,
-      0.31,
-      0.28, // 9 AM - 10 AM
-      0.25,
-      0.22,
-      0.19,
-      0.16, // 10 AM - 11 AM
-      0.13,
-      0.1,
-      0.07,
-      0.04, // 11 AM - Noon
-      0.0,
-      0.04,
-      0.07,
-      0.1, // Noon - 1 PM
-      0.13,
-      0.16,
-      0.19,
-      0.22, // 1 PM - 2 PM
-      0.25,
-      0.28,
-      0.31,
-      0.34, // 2 PM - 3 PM
-      0.37,
-      0.4,
-      0.43,
-      0.47, // 3 PM - 4 PM
-      0.5,
-      0.53,
-      0.57,
-      0.6, // 4 PM - 5 PM
-      0.63,
-      0.66,
-      0.69,
-      0.72, // 5 PM - 6 PM
-      0.75,
-      0.78,
-      0.81,
-      0.84, // 6 PM - 7 PM
-      0.87,
-      0.9,
-      0.93,
-      0.96, // 7 PM - 8 PM
-      1.0,
-      0.96,
-      0.93,
-      0.9, // 8 PM - 9 PM
-      0.87,
-      0.84,
-      0.81,
-      0.78, // 9 PM - 10 PM
-      0.75,
-      0.72,
-      0.69,
-      0.66, // 10 PM - 11 PM
-      0.63,
-      0.6,
-      0.57,
-      0.53, // 11 PM - Midnight
-      0.5, // Midnight (same as the start value)
-    ];
+    const lookupTable = this.generateLookupTable();
 
     // Determine the current interval
     const now = new Date();
