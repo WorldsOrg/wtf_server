@@ -2,6 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 import { Cron } from '@nestjs/schedule';
+import { createClient } from '@supabase/supabase-js';
 
 interface Bot {
   name: string;
@@ -16,6 +17,9 @@ export class AsfService {
   private bots: Bot[] = [];
   private running_bots: Bot[] = [];
   private disabled_bots: Bot[] = [];
+  private previous_ccu: number = 0;
+  private supabase;
+  private bot_multiplication_factor: number;
 
   constructor() {
     this.asf_apis = [
@@ -29,9 +33,59 @@ export class AsfService {
     this.asf_passwords = ['hi', 'hi', 'hi', 'hi', 'hi', 'hi', 'hi'];
     this.axiosInstances = this.createAxiosInstances();
 
+    this.supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_ANON_KEY,
+    );
+
+    this.bot_multiplication_factor = Number(
+      process.env.BOT_MULTIPLICATION_FACTOR,
+    );
+
+    (async () => {
+      this.previous_ccu = await this.getCCU();
+      console.log('Initial CCU:', this.previous_ccu);
+    })();
+
     (async () => {
       await this.initializeBotArray();
     })();
+  }
+
+  private async getCCU(): Promise<number> {
+    try {
+      let allData = [];
+      let from = 0;
+      const limit = 1000;
+      let data, error;
+
+      // need to paginate because supabase-js has a limit of 1000 rows per query
+      do {
+        const { data: batchData, error: batchError } = await this.supabase
+          .from('wtf_steam_users')
+          .select('steam_id')
+          .eq('playing', true)
+          .range(from, from + limit - 1);
+
+        if (batchError) {
+          throw batchError;
+        }
+
+        allData = allData.concat(batchData);
+        from += limit;
+        data = batchData;
+        error = batchError;
+      } while (data.length === limit);
+      if (allData.length > 0) {
+        return allData.length;
+      } else if (error) {
+        console.error('Error fetching CCU:', error.message);
+        return 0;
+      }
+    } catch (error) {
+      console.error('Error fetching CCU:', error.message);
+      return 0;
+    }
   }
 
   private createAxiosInstances(): AxiosInstance[] {
@@ -210,46 +264,30 @@ export class AsfService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  generateLookupTable(): number[] {
-    const lookupTable = [];
-    const totalIntervals = 96; // 24 hours * 4 intervals per hour
-
-    for (let i = 0; i < totalIntervals; i++) {
-      const radians = (i / totalIntervals) * 2 * Math.PI;
-      const value = Math.abs(0.5 + 0.5 * Math.sin(radians - Math.PI / 2)); // Sinusoidal wave from 0 to 1
-      lookupTable.push(value);
-    }
-
-    return lookupTable;
-  }
-
   @Cron('*/15 * * * *') // Every 15 minutes
   async handleBotManagement() {
     console.log('Managing bots');
 
     const maxBots = 600; // Total bots available
-    const lookupTable = this.generateLookupTable();
-
-    // Determine the current interval
-    const now = new Date();
-    const currentInterval =
-      now.getHours() * 4 + Math.floor(now.getMinutes() / 15);
 
     // Determine the target percentage of active bots
-    const targetPercentage = lookupTable[currentInterval];
-    const targetBots = Math.round(maxBots * targetPercentage);
+    let botsToStart,
+      botsToStop = 0;
 
-    const currentActiveBots = this.running_bots.length;
-    const botsToStart = Math.max(0, targetBots - currentActiveBots);
-    const botsToStop = Math.max(0, currentActiveBots - targetBots);
+    const ccu = await this.getCCU();
+    const ccuDiff = ccu - this.previous_ccu;
+    if (ccu > 0 && ccuDiff > 0) {
+      botsToStart = ccuDiff * this.bot_multiplication_factor;
+      if (botsToStart + this.running_bots.length > maxBots) {
+        botsToStart = maxBots - this.running_bots.length;
+      }
+    } else if (ccu > 0 && ccuDiff < 0) {
+      botsToStop = Math.abs(ccuDiff) * this.bot_multiplication_factor;
+    }
 
-    // Log the current status
-    console.log(
-      `Current Interval: ${currentInterval}, Target Bots: ${targetBots}, Current Active: ${currentActiveBots}`,
-    );
-    console.log(`Bots to Start: ${botsToStart}, Bots to Stop: ${botsToStop}`);
-
-    // Smooth transition by dividing the interval evenly
+    console.log('Previous CCU:', this.previous_ccu);
+    console.log('CCU:', ccu);
+    console.log('CCU Diff:', ccuDiff);
     const interval = (15 * 60 * 1000) / (botsToStart + botsToStop || 1);
 
     try {
