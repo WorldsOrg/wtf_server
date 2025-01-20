@@ -276,6 +276,7 @@ export class AsfService {
 
     const ccu = await this.getCCU();
     const ccuDiff = ccu - this.previous_ccu;
+    this.previous_ccu = ccu;
     if (ccu > 0 && ccuDiff > 0) {
       botsToStart = ccuDiff * this.bot_multiplication_factor;
       if (botsToStart + this.running_bots.length > maxBots) {
