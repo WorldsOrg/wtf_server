@@ -276,6 +276,9 @@ export class AsfService {
 
     const ccu = await this.getCCU();
     const ccuDiff = ccu - this.previous_ccu;
+    console.log('Previous CCU:', this.previous_ccu);
+    console.log('CCU:', ccu);
+    console.log('CCU Diff:', ccuDiff);
     this.previous_ccu = ccu;
     if (ccu > 0 && ccuDiff > 0) {
       botsToStart = ccuDiff * this.bot_multiplication_factor;
@@ -286,9 +289,6 @@ export class AsfService {
       botsToStop = Math.abs(ccuDiff) * this.bot_multiplication_factor;
     }
 
-    console.log('Previous CCU:', this.previous_ccu);
-    console.log('CCU:', ccu);
-    console.log('CCU Diff:', ccuDiff);
     const interval = (15 * 60 * 1000) / (botsToStart + botsToStop || 1);
 
     try {
