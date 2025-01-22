@@ -288,7 +288,14 @@ export class AsfService {
     console.log('CCU:', ccu);
     console.log('CCU Diff:', ccuDiff);
     try {
-      this.supabase_events.from('ccu_history').insert({ ccu: ccu });
+      const { data, error } = await this.supabase_events
+        .from('ccu_history')
+        .insert({ ccu: ccu });
+      if (error) {
+        throw error;
+      } else {
+        console.log(data);
+      }
     } catch (error) {
       console.error(
         'Error inserting CCU into ccu_history table:',
