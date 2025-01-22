@@ -290,7 +290,7 @@ export class AsfService {
     try {
       const { data, error } = await this.supabase_events
         .from('ccu_history')
-        .insert({ ccu: ccu });
+        .insert({ ccu: Number(ccu) });
       if (error) {
         throw error;
       } else {
