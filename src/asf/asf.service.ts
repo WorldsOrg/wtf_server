@@ -19,6 +19,7 @@ export class AsfService {
   private disabled_bots: Bot[] = [];
   private previous_ccu: number = 0;
   private supabase;
+  private supabase_events;
   private bot_multiplication_factor: number;
 
   constructor() {
@@ -27,15 +28,22 @@ export class AsfService {
       'https://asf3-production.up.railway.app/Api',
       'https://asf4-production.up.railway.app/Api',
       'https://asf5-production.up.railway.app/Api',
-      'https://asf8-production.up.railway.app/Api',
       'https://asf7-production.up.railway.app/Api',
+      'https://asf8-production.up.railway.app/Api',
+      'https://asf9-production.up.railway.app/Api',
+      'https://asf10-production.up.railway.app/Api',
     ];
-    this.asf_passwords = ['hi', 'hi', 'hi', 'hi', 'hi', 'hi', 'hi'];
+    this.asf_passwords = ['hi', 'hi', 'hi', 'hi', 'hi', 'hi', 'hi', 'hi'];
     this.axiosInstances = this.createAxiosInstances();
 
     this.supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_ANON_KEY,
+    );
+
+    this.supabase_events = createClient(
+      process.env.SUPABASE_EVENTS_URL,
+      process.env.SUPABASE_EVENTS_ANON_KEY,
     );
 
     this.bot_multiplication_factor = Number(
@@ -279,6 +287,14 @@ export class AsfService {
     console.log('Previous CCU:', this.previous_ccu);
     console.log('CCU:', ccu);
     console.log('CCU Diff:', ccuDiff);
+    try {
+      this.supabase_events.from('ccu_history').insert({ ccu: ccu });
+    } catch (error) {
+      console.error(
+        'Error inserting CCU into ccu_history table:',
+        error.message,
+      );
+    }
     this.previous_ccu = ccu;
     if (ccu > 0 && ccuDiff > 0) {
       botsToStart = ccuDiff * this.bot_multiplication_factor;
