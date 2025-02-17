@@ -32,8 +32,21 @@ export class AsfService {
       'https://asf8-production.up.railway.app/Api',
       'https://asf9-production.up.railway.app/Api',
       'https://asf10-production.up.railway.app/Api',
+      'https://asf11-production.up.railway.app/Api',
+      'https://asf12-production.up.railway.app/Api',
     ];
-    this.asf_passwords = ['hi', 'hi', 'hi', 'hi', 'hi', 'hi', 'hi', 'hi'];
+    this.asf_passwords = [
+      'hi',
+      'hi',
+      'hi',
+      'hi',
+      'hi',
+      'hi',
+      'hi',
+      'hi',
+      'hi',
+      'hi',
+    ];
     this.axiosInstances = this.createAxiosInstances();
 
     this.supabase = createClient(
