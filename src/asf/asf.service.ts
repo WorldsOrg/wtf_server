@@ -12,7 +12,7 @@ interface Bot {
 @Injectable()
 export class AsfService {
   private readonly asf_apis: string[];
-  private readonly asf_passwords: string[];
+  private readonly asf_password: string;
   private readonly axiosInstances: AxiosInstance[];
   private bots: Bot[] = [];
   private running_bots: Bot[] = [];
@@ -34,19 +34,58 @@ export class AsfService {
       'https://asf10-production.up.railway.app/Api',
       'https://asf11-production.up.railway.app/Api',
       'https://asf12-production.up.railway.app/Api',
+      'https://asf13-production.up.railway.app/Api',
+      'https://asf14-production.up.railway.app/Api',
+      'https://asf15-production.up.railway.app/Api',
+      'https://asf16-production.up.railway.app/Api',
+      'https://asf17-production.up.railway.app/Api',
+      'https://asf18-production.up.railway.app/Api',
+      'https://asf19-production.up.railway.app/Api',
+      'https://asf20-production.up.railway.app/Api',
+      'https://asf21-production.up.railway.app/Api',
+      'https://asf22-production.up.railway.app/Api',
+      'https://asf23-production.up.railway.app/Api',
+      'https://asf24-production.up.railway.app/Api',
+      'https://asf25-production.up.railway.app/Api',
+      'https://asf26-production.up.railway.app/Api',
+      'https://asf27-production.up.railway.app/Api',
+      'https://asf28-production.up.railway.app/Api',
+      'https://asf29-production.up.railway.app/Api',
+      'https://asf30-production.up.railway.app/Api',
+      'https://asf31-production.up.railway.app/Api',
+      'https://asf32-production.up.railway.app/Api',
+      'https://asf33-production.up.railway.app/Api',
+      'https://asf34-production.up.railway.app/Api',
+      'https://asf35-production.up.railway.app/Api',
+      'https://asf36-production.up.railway.app/Api',
+      'https://asf37-production.up.railway.app/Api',
+      'https://asf38-production.up.railway.app/Api',
+      'https://asf39-production.up.railway.app/Api',
+      'https://asf40-production.up.railway.app/Api',
+      'https://asf41-production.up.railway.app/Api',
+      'https://asf42-production.up.railway.app/Api',
+      'https://asf43-production.up.railway.app/Api',
+      'https://asf44-production.up.railway.app/Api',
+      'https://asf45-production.up.railway.app/Api',
+      'https://asf46-production.up.railway.app/Api',
+      'https://asf47-production.up.railway.app/Api',
+      'https://asf48-production.up.railway.app/Api',
+      'https://asf49-production.up.railway.app/Api',
+      'https://asf50-production.up.railway.app/Api',
+      'https://asf51-production.up.railway.app/Api',
+      'https://asf52-production.up.railway.app/Api',
+      'https://asf53-production.up.railway.app/Api',
+      'https://asf54-production.up.railway.app/Api',
+      'https://asf55-production.up.railway.app/Api',
+      'https://asf56-production.up.railway.app/Api',
+      'https://asf57-production.up.railway.app/Api',
+      'https://asf58-production.up.railway.app/Api',
+      'https://asf59-production.up.railway.app/Api',
+      'https://asf60-production.up.railway.app/Api',
+      'https://asf61-production.up.railway.app/Api',
+      'https://asf62-production.up.railway.app/Api',
     ];
-    this.asf_passwords = [
-      'hi',
-      'hi',
-      'hi',
-      'hi',
-      'hi',
-      'hi',
-      'hi',
-      'hi',
-      'hi',
-      'hi',
-    ];
+    this.asf_password = 'hi';
     this.axiosInstances = this.createAxiosInstances();
 
     this.supabase = createClient(
@@ -114,7 +153,7 @@ export class AsfService {
 
     for (let i = 0; i < this.asf_apis.length; i++) {
       const apiUrl = this.asf_apis[i];
-      const password = this.asf_passwords[i];
+      const password = this.asf_password;
 
       const instance = axios.create({
         baseURL: apiUrl,
@@ -289,7 +328,7 @@ export class AsfService {
   async handleBotManagement() {
     console.log('Managing bots');
 
-    const maxBots = 600; // Total bots available
+    const maxBots = 6000; // Total bots available
 
     // Determine the target percentage of active bots
     let botsToStart,
