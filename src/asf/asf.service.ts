@@ -84,6 +84,26 @@ export class AsfService {
       'https://asf60-production.up.railway.app/Api',
       'https://asf61-production.up.railway.app/Api',
       'https://asf62-production.up.railway.app/Api',
+      'https://asf63-production.up.railway.app/Api',
+      'https://asf64-production.up.railway.app/Api',
+      'https://asf65-production.up.railway.app/Api',
+      'https://asf66-production.up.railway.app/Api',
+      'https://asf67-production.up.railway.app/Api',
+      'https://asf68-production.up.railway.app/Api',
+      'https://asf69-production.up.railway.app/Api',
+      'https://asf70-production.up.railway.app/Api',
+      'https://asf71-production.up.railway.app/Api',
+      'https://asf72-production.up.railway.app/Api',
+      'https://asf73-production.up.railway.app/Api',
+      'https://asf74-production.up.railway.app/Api',
+      'https://asf75-production.up.railway.app/Api',
+      'https://asf76-production.up.railway.app/Api',
+      'https://asf77-production.up.railway.app/Api',
+      'https://asf78-production.up.railway.app/Api',
+      'https://asf79-production.up.railway.app/Api',
+      'https://asf80-production.up.railway.app/Api',
+      'https://asf81-production.up.railway.app/Api',
+      'https://asf82-production.up.railway.app/Api',
     ];
     this.asf_password = 'hi';
     this.axiosInstances = this.createAxiosInstances();
@@ -328,7 +348,7 @@ export class AsfService {
   async handleBotManagement() {
     console.log('Managing bots');
 
-    const maxBots = 6000; // Total bots available
+    const maxBots = 8000; // Total bots available
 
     // Determine the target percentage of active bots
     let botsToStart,
