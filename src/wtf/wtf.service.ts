@@ -2,12 +2,14 @@
 import { Injectable } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 import { AddMatchSummaryDto } from './dto/match.summary.dto';
+import { AddPlayerDto } from './dto/player.dto';
 
 @Injectable()
 export class WtfService {
   private supabase;
   private matchSummaryTable = 'MatchSummary';
   private playerResultsTable = 'PlayerSpecificMatchSummary';
+  private playerTable = 'WtfPlayers';
 
   constructor() {
     this.supabase = createClient(
@@ -16,7 +18,21 @@ export class WtfService {
     );
   }
 
-  async saveMatchSummary(addMatchSummaryDto: AddMatchSummaryDto) {
+  async addPlayer(addPlayerDto: AddPlayerDto) {
+    try {
+      const { error } = await this.supabase
+        .from(this.playerTable)
+        .insert(addPlayerDto);
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      return { message: error };
+    }
+    return { message: 'New player added successfully' };
+  }
+
+  async addMatchSummary(addMatchSummaryDto: AddMatchSummaryDto) {
     try {
       const { error } = await this.supabase
         .from(this.matchSummaryTable)
@@ -41,6 +57,6 @@ export class WtfService {
     } catch (error) {
       return { message: error };
     }
-    return { message: 'Match summary saved successfully' };
+    return { message: 'Match summary added successfully' };
   }
 }
