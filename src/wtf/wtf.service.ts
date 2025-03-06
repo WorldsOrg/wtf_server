@@ -26,9 +26,14 @@ export class WtfService {
       }
 
       for (const playerResult of addMatchSummaryDto.PlayerResults) {
+        const result = {
+          ...playerResult,
+          MatchID: addMatchSummaryDto.MatchSummary.MatchID,
+        };
+
         const { error } = await this.supabase
           .from(this.playerResultsTable)
-          .insert(playerResult);
+          .insert(result);
         if (error) {
           throw error;
         }
