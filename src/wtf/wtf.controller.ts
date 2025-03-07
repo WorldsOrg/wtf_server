@@ -9,13 +9,13 @@ export class WtfController {
 
   @Post('/matchSummary')
   async addMatchSummary(@Body() addMatchSummaryDto: AddMatchSummaryDto) {
-    console.log('add match summary called');
+    console.log('add match summary called', addMatchSummaryDto);
     return await this.WtfService.addMatchSummary(addMatchSummaryDto);
   }
 
   @Post('/player')
   async addPlayer(@Body() addPlayerDto: AddPlayerDto) {
-    console.log('add player called');
+    console.log('add player called', addPlayerDto);
     return await this.WtfService.addPlayer(addPlayerDto);
   }
 }
