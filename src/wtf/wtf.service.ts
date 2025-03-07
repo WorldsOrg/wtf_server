@@ -20,14 +20,21 @@ export class WtfService {
 
   async addPlayer(addPlayerDto: AddPlayerDto) {
     try {
+      const currentTimestamp = new Date().toISOString();
+      const playerData = {
+        ...addPlayerDto,
+        LoginTimestamp: currentTimestamp,
+      };
+
       const { error } = await this.supabase
         .from(this.playerTable)
-        .insert(addPlayerDto);
+        .insert(playerData);
+
       if (error) {
         throw error;
       }
     } catch (error) {
-      return { message: error };
+      return { message: error.message };
     }
     return { message: 'New player added successfully' };
   }

@@ -3,5 +3,4 @@ export class AddPlayerDto {
   Username: string;
   Region: string;
   GameVersion: string;
-  LoginTimestamp: string;
 }
