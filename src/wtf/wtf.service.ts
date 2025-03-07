@@ -10,6 +10,7 @@ export class WtfService {
   private matchSummaryTable = 'MatchSummary';
   private playerResultsTable = 'PlayerSpecificMatchSummary';
   private playerTable = 'WtfPlayers';
+  private loginHistoryTable = 'LoginHistory';
 
   constructor() {
     this.supabase = createClient(
@@ -19,24 +20,49 @@ export class WtfService {
   }
 
   async addPlayer(addPlayerDto: AddPlayerDto) {
+    const currentTimestamp = new Date().toISOString();
+    const playerData = {
+      ...addPlayerDto,
+      LoginTimestamp: currentTimestamp,
+    };
+
     try {
-      const currentTimestamp = new Date().toISOString();
-      const playerData = {
-        ...addPlayerDto,
-        LoginTimestamp: currentTimestamp,
-      };
-
-      const { error } = await this.supabase
+      // Check if player already exists
+      const { data, error: fetchError } = await this.supabase
         .from(this.playerTable)
-        .insert(playerData);
+        .select()
+        .eq('PlayerID', addPlayerDto.PlayerID);
 
-      if (error) {
-        throw error;
+      if (fetchError) throw fetchError;
+
+      if (data.length > 0) {
+        // Player exists, update record
+        const { error: updateError } = await this.supabase
+          .from(this.playerTable)
+          .update(playerData)
+          .eq('PlayerID', addPlayerDto.PlayerID);
+
+        if (updateError) throw updateError;
+      } else {
+        // New player, insert record
+        const { error: insertError } = await this.supabase
+          .from(this.playerTable)
+          .insert(playerData);
+
+        if (insertError) throw insertError;
       }
+
+      // Insert login history
+      const { error: loginHistoryError } = await this.supabase
+        .from(this.loginHistoryTable)
+        .insert({ PlayerID: addPlayerDto.PlayerID });
+
+      if (loginHistoryError) throw loginHistoryError;
+
+      return { message: 'New player added successfully' };
     } catch (error) {
       return { message: error.message };
     }
-    return { message: 'New player added successfully' };
   }
 
   async addMatchSummary(addMatchSummaryDto: AddMatchSummaryDto) {
