@@ -10,7 +10,9 @@ export class WtfController {
   @Post('/matchSummary')
   async addMatchSummary(@Body() addMatchSummaryDto: AddMatchSummaryDto) {
     console.log('add match summary called', addMatchSummaryDto);
-    return await this.WtfService.addMatchSummary(addMatchSummaryDto);
+    const res = await this.WtfService.addMatchSummary(addMatchSummaryDto);
+    console.log('add match summary response', res);
+    return res;
   }
 
   @Post('/player')
