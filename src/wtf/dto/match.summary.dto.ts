@@ -10,7 +10,7 @@ class MatchSummaryDto {
   ServerRegion: string;
 }
 
-class PlayerResultsDto {
+export class PlayerResultsDto {
   PlayerID: string;
   TeamID: number;
   Kills: number;
