@@ -95,6 +95,22 @@ export class WtfService {
       const playerID = playerResult.PlayerID;
       const timePlayed = playerResult.TimePlayed || '00:00:00';
 
+      // Function to convert "HH:MM:SS" text format to total seconds
+      const timeStringToSeconds = (time: string): number => {
+        const [hours, minutes, seconds] = time.split(':').map(Number);
+        return hours * 3600 + minutes * 60 + seconds;
+      };
+
+      // Function to convert total seconds back to "HH:MM:SS" format
+      const secondsToTimeString = (totalSeconds: number): string => {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return [hours, minutes, seconds]
+          .map((v) => String(v).padStart(2, '0'))
+          .join(':');
+      };
+
       // Calculate XP Earned
       const xpEarned =
         playerResult.Kills * (this.xpRewards.get('KillXP') || 0) +
@@ -107,44 +123,84 @@ export class WtfService {
           ? this.xpRewards.get('MatchWinXP') || 0
           : 0);
 
-      // Fetch player's current XP
+      // Fetch player's current statistics
       const { data: currentStats, error: fetchError } = await this.supabase
         .from('PlayerStatistics')
-        .select('TotalXP')
+        .select(
+          'TotalXP, TotalMatches, MatchesWon, MatchesLost, TotalKills, TotalAssists, TotalDeaths, TotalScore, TotalObjectives, TotalDamageDealt, TotalDamageTaken, TotalHeadshots, TotalShotsFired, TotalShotsHit, TotalRoundsWon, TotalRoundsLost, TotalFirstBloods, TotalLastAlive, TotalTimePlayed',
+        )
         .eq('PlayerID', playerID)
         .single();
 
       if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
-      const totalXP = (currentStats?.TotalXP || 0) + xpEarned;
+      // Default values in case the player does not exist yet
+      const prevStats = currentStats || {
+        TotalXP: 0,
+        TotalMatches: 0,
+        MatchesWon: 0,
+        MatchesLost: 0,
+        TotalKills: 0,
+        TotalAssists: 0,
+        TotalDeaths: 0,
+        TotalScore: 0,
+        TotalObjectives: 0,
+        TotalDamageDealt: 0,
+        TotalDamageTaken: 0,
+        TotalHeadshots: 0,
+        TotalShotsFired: 0,
+        TotalShotsHit: 0,
+        TotalRoundsWon: 0,
+        TotalRoundsLost: 0,
+        TotalFirstBloods: 0,
+        TotalLastAlive: 0,
+        TotalTimePlayed: '00:00:00',
+      };
 
-      // Get level from cached LevelProgression data
+      // Convert TotalTimePlayed (text) to seconds and sum
+      const prevTotalSeconds = timeStringToSeconds(prevStats.TotalTimePlayed);
+      const matchTimeSeconds = timeStringToSeconds(timePlayed);
+      const newTotalSeconds = prevTotalSeconds + matchTimeSeconds;
+
+      // Convert back to "HH:MM:SS" format
+      const newTotalTimePlayed = secondsToTimeString(newTotalSeconds);
+
+      // Accumulate new stats
+      const totalXP = prevStats.TotalXP + xpEarned;
       const playerLevel = this.getLevelFromXP(totalXP);
 
-      // Upsert player stats into PlayerStatistics
       const { error } = await this.supabase.from('PlayerStatistics').upsert(
         {
           PlayerID: playerID,
-          TotalMatches: 1,
-          MatchesWon: playerResult.MatchOutcome === 'Win' ? 1 : 0,
-          MatchesLost: playerResult.MatchOutcome === 'Loss' ? 1 : 0,
-          TotalKills: playerResult.Kills,
-          TotalAssists: playerResult.Assists,
-          TotalDeaths: playerResult.Deaths,
-          TotalScore: playerResult.Score,
-          TotalObjectives: playerResult.ObjectiveCompletions,
-          TotalDamageDealt: playerResult.DamageDealt,
-          TotalDamageTaken: playerResult.DamageTaken,
-          TotalHeadshots: playerResult.Headshots,
-          TotalShotsFired: playerResult.ShotsFired,
-          TotalShotsHit: playerResult.ShotsHit,
-          TotalRoundsWon: playerResult.RoundsWon,
-          TotalRoundsLost: playerResult.RoundsLost,
+          TotalMatches: prevStats.TotalMatches + 1,
+          MatchesWon:
+            prevStats.MatchesWon +
+            (playerResult.MatchOutcome === 'Win' ? 1 : 0),
+          MatchesLost:
+            prevStats.MatchesLost +
+            (playerResult.MatchOutcome === 'Loss' ? 1 : 0),
+          TotalKills: prevStats.TotalKills + playerResult.Kills,
+          TotalAssists: prevStats.TotalAssists + playerResult.Assists,
+          TotalDeaths: prevStats.TotalDeaths + playerResult.Deaths,
+          TotalScore: prevStats.TotalScore + playerResult.Score,
+          TotalObjectives:
+            prevStats.TotalObjectives + playerResult.ObjectiveCompletions,
+          TotalDamageDealt:
+            prevStats.TotalDamageDealt + playerResult.DamageDealt,
+          TotalDamageTaken:
+            prevStats.TotalDamageTaken + playerResult.DamageTaken,
+          TotalHeadshots: prevStats.TotalHeadshots + playerResult.Headshots,
+          TotalShotsFired: prevStats.TotalShotsFired + playerResult.ShotsFired,
+          TotalShotsHit: prevStats.TotalShotsHit + playerResult.ShotsHit,
+          TotalRoundsWon: prevStats.TotalRoundsWon + playerResult.RoundsWon,
+          TotalRoundsLost: prevStats.TotalRoundsLost + playerResult.RoundsLost,
           TotalXP: totalXP,
           Level: playerLevel,
-          TotalFirstBloods: playerResult.FirstBlood || 0,
-          TotalLastAlive: playerResult.LastAlive || 0,
-          TotalTimePlayed: timePlayed,
+          TotalFirstBloods:
+            prevStats.TotalFirstBloods + (playerResult.FirstBlood || 0),
+          TotalLastAlive:
+            prevStats.TotalLastAlive + (playerResult.LastAlive || 0),
+          TotalTimePlayed: newTotalTimePlayed, // Correctly handled as text
         },
         { onConflict: ['PlayerID'] },
       );
