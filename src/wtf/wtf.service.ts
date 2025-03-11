@@ -295,7 +295,23 @@ export class WtfService {
         { data: movementStatsData, error: movementError },
       ] = await Promise.all([
         this.supabase.from('LevelProgression').select('*'),
-        this.supabase.from('WeaponStats').select('*'),
+        this.supabase.from('WeaponStats').select(`
+          "Name",
+          "MovementSpeed",
+          "ADSSpeed",
+          "LoadedReloadSpeed",
+          "EmptyReloadSpeed",
+          "EquipSpeed",
+          "FirstEquipSpeed",
+          "UnequipSpeed",
+          "SpreadExponent",
+          "BaseDamage",
+          "PelletsPerCartridge",
+          "MaxMagazineAmmo",
+          "BulletVelocity",
+          "FireRate",
+          "MaximumRange"
+        `),
         this.supabase.from('XPRewards').select('*').single(), // Expecting a single row
         this.supabase.from('MovementStats').select('*'),
       ]);
