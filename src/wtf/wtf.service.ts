@@ -39,8 +39,6 @@ export class WtfService {
       data.forEach((row) => {
         this.levelProgression.set(row.XP, row.Level);
       });
-
-      console.log('Level progression loaded:', this.levelProgression);
     } catch (error) {
       console.error('Error loading level progression:', error);
     }
@@ -66,8 +64,6 @@ export class WtfService {
       this.xpRewards.set('AssistXP', data.AssistXP);
       this.xpRewards.set('FirstBloodXP', data.FirstBloodXP);
       this.xpRewards.set('LastAliveXP', data.LastAliveXP);
-
-      console.log('XP rewards loaded:', this.xpRewards);
     } catch (error) {
       console.error('Error loading XP rewards:', error);
     }
@@ -77,17 +73,14 @@ export class WtfService {
    * Get Level Based on XP
    */
   getLevelFromXP(totalXP: number): number {
-    let playerLevel = 0;
+    const xpArray = Array.from(this.levelProgression.entries()).sort(
+      (a, b) => a[0] - b[0],
+    );
 
-    for (const [xp, level] of this.levelProgression.entries()) {
-      if (totalXP >= xp) {
-        playerLevel = level;
-      } else {
-        break;
-      }
+    for (const [xp, level] of xpArray) {
+      if (totalXP < xp) return level;
     }
-
-    return playerLevel;
+    return xpArray[xpArray.length - 1][1]; // Return max level if XP exceeds all
   }
 
   async updatePlayerStatistics(playerResult: PlayerResultsDto) {
@@ -289,6 +282,60 @@ export class WtfService {
     } catch (error) {
       console.error('Error in addMatchSummary:', error);
       return { message: error.message };
+    }
+  }
+
+  async getGameData() {
+    try {
+      // Fetch data from all tables concurrently
+      const [
+        { data: levelProgressionData, error: levelError },
+        { data: weaponStatsData, error: weaponError },
+        { data: xpRewardsData, error: xpError },
+        { data: movementStatsData, error: movementError },
+      ] = await Promise.all([
+        this.supabase.from('LevelProgression').select('*'),
+        this.supabase.from('WeaponStats').select('*'),
+        this.supabase.from('XPRewards').select('*').single(), // Expecting a single row
+        this.supabase.from('MovementStats').select('*'),
+      ]);
+
+      // Handle errors if any
+      if (levelError || weaponError || xpError || movementError) {
+        throw new Error(
+          `Error fetching data: ${
+            levelError?.message ||
+            weaponError?.message ||
+            xpError?.message ||
+            movementError?.message
+          }`,
+        );
+      }
+
+      // Structure the final object
+      const gameData = {
+        LevelProgression: levelProgressionData.reduce((acc, row) => {
+          acc[row.Level] = row.XP;
+          return acc;
+        }, {}), // Convert to { Level: XP } mapping
+
+        WeaponStats: weaponStatsData.reduce((acc, weapon) => {
+          acc[weapon.Name] = { ...weapon };
+          return acc;
+        }, {}), // Convert to { "WeaponName": {weapon data} }
+
+        XPRewards: xpRewardsData, // Single row expected, keeping as an object
+
+        MovementStats: movementStatsData.reduce((acc, row) => {
+          acc[row.Level] = { ...row };
+          return acc;
+        }, {}), // Convert to { Level: {movement data} }
+      };
+
+      return gameData;
+    } catch (error) {
+      console.error('Error in getAllGameData:', error);
+      return { error: error.message };
     }
   }
 }
