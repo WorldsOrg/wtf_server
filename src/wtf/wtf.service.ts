@@ -255,33 +255,52 @@ export class WtfService {
 
   async addMatchSummary(addMatchSummaryDto: AddMatchSummaryDto) {
     try {
-      // Insert match summary
-      const { error } = await this.supabase
+      // Start by inserting the match summary
+      const { data: matchData, error: matchError } = await this.supabase
         .from(this.matchSummaryTable)
-        .insert(addMatchSummaryDto.MatchSummary);
-      if (error) throw error;
+        .insert([addMatchSummaryDto.MatchSummary])
+        .select()
+        .single();
 
-      // Process each player's results
+      if (matchError)
+        throw new Error(`Match summary insert failed: ${matchError.message}`);
+
+      const matchID = matchData.MatchID;
+
+      // Prepare player results for bulk insert
+      const playerResults = addMatchSummaryDto.PlayerResults.map((player) => ({
+        ...player,
+        MatchID: matchID, // Associate with inserted match
+      }));
+
+      // Insert player match results in bulk
+      const { error: playerResultsError } = await this.supabase
+        .from(this.playerResultsTable)
+        .insert(playerResults);
+
+      if (playerResultsError)
+        throw new Error(
+          `Player results insert failed: ${playerResultsError.message}`,
+        );
+
+      // Update player statistics for each player in a loop
       for (const playerResult of addMatchSummaryDto.PlayerResults) {
-        const result = {
-          ...playerResult,
-          MatchID: addMatchSummaryDto.MatchSummary.MatchID,
-        };
-
-        // Insert player match results
-        const { error } = await this.supabase
-          .from(this.playerResultsTable)
-          .insert(result);
-        if (error) throw error;
-
-        // Update aggregated player statistics
         await this.updatePlayerStatistics(playerResult);
       }
 
       return { message: 'Match summary and player stats updated successfully' };
     } catch (error) {
       console.error('Error in addMatchSummary:', error);
-      return { message: error.message };
+
+      // Cleanup: Remove the inserted match summary if an error occurred after insertion
+      if (addMatchSummaryDto.MatchSummary?.MatchID) {
+        await this.supabase
+          .from(this.matchSummaryTable)
+          .delete()
+          .eq('MatchID', addMatchSummaryDto.MatchSummary.MatchID);
+      }
+
+      return { message: `Transaction failed: ${error.message}` };
     }
   }
 
