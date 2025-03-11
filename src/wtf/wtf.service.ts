@@ -13,6 +13,7 @@ export class WtfService {
   private playerResultsTable = 'PlayerSpecificMatchSummary';
   private playerTable = 'WtfPlayers';
   private loginHistoryTable = 'LoginHistory';
+  private playerStatisticsTable = 'PlayerStatistics';
 
   constructor() {
     this.supabase = createClient(
@@ -162,41 +163,45 @@ export class WtfService {
       const totalXP = prevStats.TotalXP + xpEarned;
       const playerLevel = this.getLevelFromXP(totalXP);
 
-      const { error } = await this.supabase.from('PlayerStatistics').upsert(
-        {
-          PlayerID: playerID,
-          TotalMatches: prevStats.TotalMatches + 1,
-          MatchesWon:
-            prevStats.MatchesWon +
-            (playerResult.MatchOutcome === 'Win' ? 1 : 0),
-          MatchesLost:
-            prevStats.MatchesLost +
-            (playerResult.MatchOutcome === 'Loss' ? 1 : 0),
-          TotalKills: prevStats.TotalKills + playerResult.Kills,
-          TotalAssists: prevStats.TotalAssists + playerResult.Assists,
-          TotalDeaths: prevStats.TotalDeaths + playerResult.Deaths,
-          TotalScore: prevStats.TotalScore + playerResult.Score,
-          TotalObjectives:
-            prevStats.TotalObjectives + playerResult.ObjectiveCompletions,
-          TotalDamageDealt:
-            prevStats.TotalDamageDealt + playerResult.DamageDealt,
-          TotalDamageTaken:
-            prevStats.TotalDamageTaken + playerResult.DamageTaken,
-          TotalHeadshots: prevStats.TotalHeadshots + playerResult.Headshots,
-          TotalShotsFired: prevStats.TotalShotsFired + playerResult.ShotsFired,
-          TotalShotsHit: prevStats.TotalShotsHit + playerResult.ShotsHit,
-          TotalRoundsWon: prevStats.TotalRoundsWon + playerResult.RoundsWon,
-          TotalRoundsLost: prevStats.TotalRoundsLost + playerResult.RoundsLost,
-          TotalXP: totalXP,
-          Level: playerLevel,
-          TotalFirstBloods:
-            prevStats.TotalFirstBloods + (playerResult.FirstBlood || 0),
-          TotalLastAlive:
-            prevStats.TotalLastAlive + (playerResult.LastAlive || 0),
-          TotalTimePlayed: newTotalTimePlayed, // Correctly handled as text
-        },
-        { onConflict: ['PlayerID'] },
-      );
+      const { error } = await this.supabase
+        .from(this.playerStatisticsTable)
+        .upsert(
+          {
+            PlayerID: playerID,
+            TotalMatches: prevStats.TotalMatches + 1,
+            MatchesWon:
+              prevStats.MatchesWon +
+              (playerResult.MatchOutcome === 'Win' ? 1 : 0),
+            MatchesLost:
+              prevStats.MatchesLost +
+              (playerResult.MatchOutcome === 'Loss' ? 1 : 0),
+            TotalKills: prevStats.TotalKills + playerResult.Kills,
+            TotalAssists: prevStats.TotalAssists + playerResult.Assists,
+            TotalDeaths: prevStats.TotalDeaths + playerResult.Deaths,
+            TotalScore: prevStats.TotalScore + playerResult.Score,
+            TotalObjectives:
+              prevStats.TotalObjectives + playerResult.ObjectiveCompletions,
+            TotalDamageDealt:
+              prevStats.TotalDamageDealt + playerResult.DamageDealt,
+            TotalDamageTaken:
+              prevStats.TotalDamageTaken + playerResult.DamageTaken,
+            TotalHeadshots: prevStats.TotalHeadshots + playerResult.Headshots,
+            TotalShotsFired:
+              prevStats.TotalShotsFired + playerResult.ShotsFired,
+            TotalShotsHit: prevStats.TotalShotsHit + playerResult.ShotsHit,
+            TotalRoundsWon: prevStats.TotalRoundsWon + playerResult.RoundsWon,
+            TotalRoundsLost:
+              prevStats.TotalRoundsLost + playerResult.RoundsLost,
+            TotalXP: totalXP,
+            Level: playerLevel,
+            TotalFirstBloods:
+              prevStats.TotalFirstBloods + (playerResult.FirstBlood || 0),
+            TotalLastAlive:
+              prevStats.TotalLastAlive + (playerResult.LastAlive || 0),
+            TotalTimePlayed: newTotalTimePlayed, // Correctly handled as text
+          },
+          { onConflict: ['PlayerID'] },
+        );
 
       if (error) throw error;
     } catch (error) {
@@ -238,6 +243,13 @@ export class WtfService {
           .insert(playerData);
 
         if (insertError) throw insertError;
+
+        // Insert new row into PlayerStatistics for the new player (Only PlayerID required)
+        const { error: statisticsError } = await this.supabase
+          .from(this.playerStatisticsTable)
+          .insert({ PlayerID: addPlayerDto.PlayerID });
+
+        if (statisticsError) throw statisticsError;
       }
 
       // Insert login history
