@@ -247,7 +247,9 @@ export class WtfService {
         // Insert new row into PlayerStatistics for the new player (Only PlayerID required)
         const { error: statisticsError } = await this.supabase
           .from(this.playerStatisticsTable)
-          .insert({ PlayerID: addPlayerDto.PlayerID });
+          .insert({
+            PlayerID: addPlayerDto.PlayerID,
+          });
 
         if (statisticsError) throw statisticsError;
       }
@@ -255,7 +257,10 @@ export class WtfService {
       // Insert login history
       const { error: loginHistoryError } = await this.supabase
         .from(this.loginHistoryTable)
-        .insert({ PlayerID: addPlayerDto.PlayerID });
+        .insert({
+          PlayerID: addPlayerDto.PlayerID,
+          GameVersion: addPlayerDto.GameVersion,
+        });
 
       if (loginHistoryError) throw loginHistoryError;
 
