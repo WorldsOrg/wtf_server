@@ -390,4 +390,35 @@ export class WtfService {
       return { error: error.message };
     }
   }
+
+  async getPlayerStats(ids: string) {
+    try {
+      if (!ids) {
+        return { error: 'No player IDs provided' };
+      }
+
+      // Convert comma-separated string to array
+      const playerIDs = ids.split(',').map((id) => id.trim());
+
+      const { data, error } = await this.supabase
+        .from(this.playerStatisticsTable)
+        .select('*')
+        .in('PlayerID', playerIDs);
+
+      if (error) {
+        throw error;
+      }
+
+      // Transform the array into an object with PlayerID as the key
+      const formattedData = data.reduce((acc, playerStat) => {
+        acc[playerStat.PlayerID] = playerStat;
+        return acc;
+      }, {});
+
+      return formattedData;
+    } catch (error) {
+      console.error('Error fetching player statistics:', error);
+      return { error: error.message };
+    }
+  }
 }

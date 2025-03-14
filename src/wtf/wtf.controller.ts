@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { WtfService } from '../wtf/wtf.service';
 import { AddMatchSummaryDto } from './dto/match.summary.dto';
 import { AddPlayerDto } from './dto/player.dto';
@@ -24,5 +24,10 @@ export class WtfController {
   @Get('/gameData')
   async getGameData() {
     return await this.WtfService.getGameData();
+  }
+
+  @Get('/playerStats')
+  async getPlayerStats(@Query('ids') ids: string) {
+    return await this.WtfService.getPlayerStats(ids);
   }
 }
