@@ -270,6 +270,23 @@ export class WtfService {
     }
   }
 
+  async getPlayer(playerID: string) {
+    try {
+      const { data, error } = await this.supabase
+        .from(this.playerTable)
+        .select('*')
+        .eq('PlayerID', playerID)
+        .single();
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
+      console.error(`Error fetching player with ID ${playerID}:`, error);
+      return { error: error.message };
+    }
+  }
+
   async addMatchSummary(addMatchSummaryDto: AddMatchSummaryDto) {
     try {
       // Start by inserting the match summary

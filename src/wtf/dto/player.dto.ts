@@ -4,4 +4,5 @@ export class AddPlayerDto {
   Region: string;
   GameVersion: string;
   SteamID: string;
+  Type: string;
 }
