@@ -35,4 +35,14 @@ export class WtfController {
   async getPlayerStats(@Query('ids') ids: string) {
     return await this.WtfService.getPlayerStats(ids);
   }
+
+  @Post('/levelProgression')
+  async updateLevelProgression() {
+    return await this.WtfService.updateLevelProgression();
+  }
+
+  @Post('/xpRewards')
+  async updateXpRewards() {
+    return await this.WtfService.updateXpRewards();
+  }
 }

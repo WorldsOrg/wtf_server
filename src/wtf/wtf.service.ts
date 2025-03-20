@@ -438,4 +438,93 @@ export class WtfService {
       return { error: error.message };
     }
   }
+
+  async updateLevelProgression() {
+    try {
+      // Reload level progression data
+      await this.loadLevelProgression();
+
+      // Fetch all players' XP and current levels
+      const { data: players, error: fetchError } = await this.supabase
+        .from(this.playerStatisticsTable)
+        .select('PlayerID, TotalXP');
+
+      if (fetchError) throw fetchError;
+
+      if (!players || players.length === 0) {
+        console.log('No player data found to update levels.');
+        return;
+      }
+
+      const updates = players.map((player) => ({
+        PlayerID: player.PlayerID,
+        Level: this.getLevelFromXP(player.TotalXP),
+      }));
+
+      // Perform bulk update
+      const { error: updateError } = await this.supabase
+        .from(this.playerStatisticsTable)
+        .upsert(updates, { onConflict: ['PlayerID'] });
+
+      if (updateError) throw updateError;
+
+      console.log(`Updated levels for ${updates.length} players.`);
+    } catch (error) {
+      console.error('Error updating player levels:', error);
+    }
+  }
+
+  async updateXpRewards() {
+    try {
+      // Reload XP rewards data
+      await this.loadXPRewards();
+
+      // Fetch all players' match-related statistics
+      const { data: players, error: fetchError } = await this.supabase
+        .from(this.playerStatisticsTable)
+        .select(
+          'PlayerID, TotalKills, TotalAssists, TotalFirstBloods, TotalLastAlive, TotalRoundsWon, TotalMatches, MatchesWon, TotalXP',
+        );
+
+      if (fetchError) throw fetchError;
+
+      if (!players || players.length === 0) {
+        console.log('No player data found to update XP.');
+        return;
+      }
+
+      // Process player XP recalculations
+      const updates = players.map((player) => {
+        const totalXP =
+          (player.TotalKills || 0) * (this.xpRewards.get('KillXP') || 0) +
+          (player.TotalAssists || 0) * (this.xpRewards.get('AssistXP') || 0) +
+          (player.TotalFirstBloods || 0) *
+            (this.xpRewards.get('FirstBloodXP') || 0) +
+          (player.TotalLastAlive || 0) *
+            (this.xpRewards.get('LastAliveXP') || 0) +
+          (player.TotalRoundsWon || 0) *
+            (this.xpRewards.get('RoundWinXP') || 0) +
+          (player.TotalMatches || 0) *
+            (this.xpRewards.get('MatchCompleteXP') || 0) +
+          (player.MatchesWon || 0) * (this.xpRewards.get('MatchWinXP') || 0);
+
+        return {
+          PlayerID: player.PlayerID,
+          TotalXP: totalXP,
+          Level: this.getLevelFromXP(totalXP),
+        };
+      });
+
+      // Perform bulk update
+      const { error: updateError } = await this.supabase
+        .from(this.playerStatisticsTable)
+        .upsert(updates, { onConflict: ['PlayerID'] });
+
+      if (updateError) throw updateError;
+
+      console.log(`Updated XP and levels for ${updates.length} players.`);
+    } catch (error) {
+      console.error('Error updating player XP and levels:', error);
+    }
+  }
 }
