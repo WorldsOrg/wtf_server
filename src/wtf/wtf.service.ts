@@ -9,6 +9,7 @@ export class WtfService {
   private supabase;
   private levelProgression = new Map<number, number>(); // XP -> Level
   private xpRewards = new Map<string, number>(); // Action -> XP
+  private devSteamIds = new Set<string>(); // Store dev Steam IDs in memory
   private matchSummaryTable = 'MatchSummary';
   private playerResultsTable = 'PlayerSpecificMatchSummary';
   private playerTable = 'WtfPlayers';
@@ -23,6 +24,26 @@ export class WtfService {
 
     this.loadLevelProgression(); // Load XP to level mapping
     this.loadXPRewards(); // Load XP rewards
+    this.loadDevSteamIds(); // Load dev Steam IDs on startup
+  }
+
+  /**
+   * Load Developer Steam IDs from the database
+   */
+  async loadDevSteamIds() {
+    try {
+      const { data, error } = await this.supabase
+        .from('DevSteamIds')
+        .select('SteamID');
+
+      if (error) throw error;
+
+      // Store SteamIDs in memory for quick lookup
+      this.devSteamIds = new Set(data.map((row) => row.SteamID));
+      console.log(`Loaded ${this.devSteamIds.size} developer Steam IDs.`);
+    } catch (error) {
+      console.error('Error loading developer Steam IDs:', error);
+    }
   }
 
   /**
@@ -531,6 +552,29 @@ export class WtfService {
       console.log(`Updated XP and levels for ${updates.length} players.`);
     } catch (error) {
       console.error('Error updating player XP and levels:', error);
+    }
+  }
+
+  /**
+   * Assign 'dev' type to players with matching SteamID
+   */
+  async updateDevPlayers() {
+    try {
+      if (this.devSteamIds.size === 0) {
+        console.log('No developer Steam IDs loaded.');
+        return;
+      }
+
+      const { error } = await this.supabase
+        .from('WtfPlayers')
+        .update({ Type: 'dev' })
+        .in('SteamID', Array.from(this.devSteamIds));
+
+      if (error) throw error;
+
+      console.log('Updated WtfPlayers with dev status.');
+    } catch (error) {
+      console.error('Error updating dev players:', error);
     }
   }
 }

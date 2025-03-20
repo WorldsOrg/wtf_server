@@ -45,4 +45,9 @@ export class WtfController {
   async updateXpRewards() {
     return await this.WtfService.updateXpRewards();
   }
+
+  @Post('/devs')
+  async updateDevPlayers() {
+    return await this.WtfService.updateDevPlayers();
+  }
 }
