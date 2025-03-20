@@ -84,6 +84,25 @@ export class WtfService {
     return xpArray[xpArray.length - 1][1]; // Return max level if XP exceeds all
   }
 
+  /**
+   * Calculate XP based on player statistics
+   */
+  calculatePlayerXP(playerStats: any): number {
+    return (
+      (playerStats.TotalKills || 0) * (this.xpRewards.get('KillXP') || 0) +
+      (playerStats.TotalAssists || 0) * (this.xpRewards.get('AssistXP') || 0) +
+      (playerStats.TotalFirstBloods || 0) *
+        (this.xpRewards.get('FirstBloodXP') || 0) +
+      (playerStats.TotalLastAlive || 0) *
+        (this.xpRewards.get('LastAliveXP') || 0) +
+      (playerStats.TotalRoundsWon || 0) *
+        (this.xpRewards.get('RoundWinXP') || 0) +
+      (playerStats.TotalMatches || 0) *
+        (this.xpRewards.get('MatchCompleteXP') || 0) +
+      (playerStats.MatchesWon || 0) * (this.xpRewards.get('MatchWinXP') || 0)
+    );
+  }
+
   async updatePlayerStatistics(playerResult: PlayerResultsDto) {
     try {
       const playerID = playerResult.PlayerID;
@@ -104,18 +123,6 @@ export class WtfService {
           .map((v) => String(v).padStart(2, '0'))
           .join(':');
       };
-
-      // Calculate XP Earned
-      const xpEarned =
-        playerResult.Kills * (this.xpRewards.get('KillXP') || 0) +
-        playerResult.Assists * (this.xpRewards.get('AssistXP') || 0) +
-        playerResult.FirstBlood * (this.xpRewards.get('FirstBloodXP') || 0) +
-        playerResult.LastAlive * (this.xpRewards.get('LastAliveXP') || 0) +
-        playerResult.RoundsWon * (this.xpRewards.get('RoundWinXP') || 0) +
-        (this.xpRewards.get('MatchCompleteXP') || 0) +
-        (playerResult.MatchOutcome === 'Win'
-          ? this.xpRewards.get('MatchWinXP') || 0
-          : 0);
 
       // Fetch player's current statistics
       const { data: currentStats, error: fetchError } = await this.supabase
@@ -160,7 +167,7 @@ export class WtfService {
       const newTotalTimePlayed = secondsToTimeString(newTotalSeconds);
 
       // Accumulate new stats
-      const totalXP = prevStats.TotalXP + xpEarned;
+      const totalXP = prevStats.TotalXP + this.calculatePlayerXP(playerResult);
       const playerLevel = this.getLevelFromXP(totalXP);
 
       const { error } = await this.supabase
@@ -495,19 +502,7 @@ export class WtfService {
 
       // Process player XP recalculations
       const updates = players.map((player) => {
-        const totalXP =
-          (player.TotalKills || 0) * (this.xpRewards.get('KillXP') || 0) +
-          (player.TotalAssists || 0) * (this.xpRewards.get('AssistXP') || 0) +
-          (player.TotalFirstBloods || 0) *
-            (this.xpRewards.get('FirstBloodXP') || 0) +
-          (player.TotalLastAlive || 0) *
-            (this.xpRewards.get('LastAliveXP') || 0) +
-          (player.TotalRoundsWon || 0) *
-            (this.xpRewards.get('RoundWinXP') || 0) +
-          (player.TotalMatches || 0) *
-            (this.xpRewards.get('MatchCompleteXP') || 0) +
-          (player.MatchesWon || 0) * (this.xpRewards.get('MatchWinXP') || 0);
-
+        const totalXP = this.calculatePlayerXP(player);
         return {
           PlayerID: player.PlayerID,
           TotalXP: totalXP,
