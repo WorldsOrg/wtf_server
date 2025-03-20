@@ -74,14 +74,25 @@ export class WtfService {
    * Get Level Based on XP
    */
   getLevelFromXP(totalXP: number): number {
+    if (this.levelProgression.size === 0) {
+      return 0; // Default level if no progression data
+    }
+
     const xpArray = Array.from(this.levelProgression.entries()).sort(
-      (a, b) => a[0] - b[0],
+      (a, b) => a[0] - b[0], // Sort by XP threshold in ascending order
     );
 
+    let currentLevel = xpArray[0][1]; // Start at the lowest level
+
     for (const [xp, level] of xpArray) {
-      if (totalXP < xp) return level;
+      if (totalXP >= xp) {
+        currentLevel = level; // Assign level until XP exceeds threshold
+      } else {
+        break; // Stop iteration when totalXP is lower than the next threshold
+      }
     }
-    return xpArray[xpArray.length - 1][1]; // Return max level if XP exceeds all
+
+    return currentLevel; // Return the last assigned level
   }
 
   /**
