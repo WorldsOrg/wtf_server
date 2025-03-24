@@ -40,7 +40,6 @@ export class WtfService {
 
       // Store SteamIDs in memory for quick lookup
       this.devSteamIds = new Set(data.map((row) => row.SteamID));
-      console.log(`Loaded ${this.devSteamIds.size} developer Steam IDs.`);
     } catch (error) {
       console.error('Error loading developer Steam IDs:', error);
     }
