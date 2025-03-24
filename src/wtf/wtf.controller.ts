@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { WtfService } from '../wtf/wtf.service';
 import { AddMatchSummaryDto } from './dto/match.summary.dto';
 import { AddPlayerDto } from './dto/player.dto';
+import { ApiParam } from '@nestjs/swagger';
 
 @Controller('wtf')
 export class WtfController {
@@ -34,6 +35,17 @@ export class WtfController {
   @Get('/playerStats')
   async getPlayerStats(@Query('ids') ids: string) {
     return await this.WtfService.getPlayerStats(ids);
+  }
+
+  @Get('/playerStats/:steamID')
+  @ApiParam({
+    name: 'steamID',
+    required: true,
+    description: 'SteamID of the player (e.g. 76561198012345678)',
+    type: String,
+  })
+  async getPlayerStatsBySteamID(@Param('steamID') steamID: string) {
+    return await this.WtfService.getPlayerStatsBySteamID(steamID);
   }
 
   @Post('/levelProgression')

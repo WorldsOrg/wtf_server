@@ -466,6 +466,32 @@ export class WtfService {
     }
   }
 
+  async getPlayerStatsBySteamID(steamID: string) {
+    try {
+      const { data: player, error: playerError } = await this.supabase
+        .from(this.playerTable)
+        .select('PlayerID')
+        .eq('SteamID', steamID)
+        .single();
+
+      if (playerError || !player)
+        throw new Error('Player not found with this SteamID');
+
+      const { data: stats, error: statsError } = await this.supabase
+        .from(this.playerStatisticsTable)
+        .select('*')
+        .eq('PlayerID', player.PlayerID)
+        .single();
+
+      if (statsError) throw statsError;
+
+      return stats;
+    } catch (error) {
+      console.error(`Error fetching stats for SteamID ${steamID}:`, error);
+      return { error: error.message };
+    }
+  }
+
   async getPlayerStats(ids: string) {
     try {
       if (!ids) {
