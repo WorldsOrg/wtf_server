@@ -117,7 +117,25 @@ export class WtfService {
   }
 
   /**
-   * Calculate XP based on player statistics
+   * Calculate XP based on player statistics of the match
+   */
+  calculateMatchPlayerXP(playerStats: any): number {
+    return (
+      (playerStats.Kills || 0) * (this.xpRewards.get('KillXP') || 0) +
+      (playerStats.Assists || 0) * (this.xpRewards.get('AssistXP') || 0) +
+      (playerStats.FirstBlood || 0) *
+        (this.xpRewards.get('FirstBloodXP') || 0) +
+      (playerStats.LastAlive || 0) * (this.xpRewards.get('LastAliveXP') || 0) +
+      (playerStats.RoundsWon || 0) * (this.xpRewards.get('RoundWinXP') || 0) +
+      (playerStats.MatchOutcome ? 1 : 0) *
+        (this.xpRewards.get('MatchCompleteXP') || 0) +
+      (playerStats.MatchOutcome == 'Win' ? 1 : 0) *
+        (this.xpRewards.get('MatchWinXP') || 0)
+    );
+  }
+
+  /**
+   * Calculate XP based on a player's statistics
    */
   calculatePlayerXP(playerStats: any): number {
     return (
@@ -199,7 +217,8 @@ export class WtfService {
       const newTotalTimePlayed = secondsToTimeString(newTotalSeconds);
 
       // Accumulate new stats
-      const totalXP = prevStats.TotalXP + this.calculatePlayerXP(playerResult);
+      const totalXP =
+        prevStats.TotalXP + this.calculateMatchPlayerXP(playerResult);
       const playerLevel = this.getLevelFromXP(totalXP);
 
       const { error } = await this.supabase
