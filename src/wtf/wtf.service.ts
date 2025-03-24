@@ -40,7 +40,6 @@ export class WtfService {
 
       // Store SteamIDs in memory for quick lookup
       this.devSteamIds = new Set(data.map((row) => row.SteamID));
-      console.log(`Loaded ${this.devSteamIds.size} developer Steam IDs.`);
     } catch (error) {
       console.error('Error loading developer Steam IDs:', error);
     }
@@ -462,6 +461,32 @@ export class WtfService {
       return gameData;
     } catch (error) {
       console.error('Error in getAllGameData:', error);
+      return { error: error.message };
+    }
+  }
+
+  async getPlayerStatsBySteamID(steamID: string) {
+    try {
+      const { data: player, error: playerError } = await this.supabase
+        .from(this.playerTable)
+        .select('PlayerID')
+        .eq('SteamID', steamID)
+        .single();
+
+      if (playerError || !player)
+        throw new Error('Player not found with this SteamID');
+
+      const { data: stats, error: statsError } = await this.supabase
+        .from(this.playerStatisticsTable)
+        .select('*')
+        .eq('PlayerID', player.PlayerID)
+        .single();
+
+      if (statsError) throw statsError;
+
+      return stats;
+    } catch (error) {
+      console.error(`Error fetching stats for SteamID ${steamID}:`, error);
       return { error: error.message };
     }
   }
