@@ -15,6 +15,7 @@ export class WtfService {
   private playerTable = 'WtfPlayers';
   private loginHistoryTable = 'LoginHistory';
   private playerStatisticsTable = 'PlayerStatistics';
+  private devSteamIdsTable = 'DevSteamIds';
 
   constructor() {
     this.supabase = createClient(
@@ -33,7 +34,7 @@ export class WtfService {
   async loadDevSteamIds() {
     try {
       const { data, error } = await this.supabase
-        .from('DevSteamIds')
+        .from(this.devSteamIdsTable)
         .select('SteamID');
 
       if (error) throw error;
@@ -279,6 +280,11 @@ export class WtfService {
       addPlayerDto.SteamID?.trim() === '' ? null : addPlayerDto.SteamID;
 
     try {
+      // 🔍 Check if SteamID is in DevSteamIds
+      const isDev = normalizedSteamID
+        ? this.devSteamIds.has(normalizedSteamID)
+        : false;
+
       // Look for existing player by EpicID or SteamID
       let query = this.supabase.from(this.playerTable).select('*').limit(1);
 
@@ -293,7 +299,6 @@ export class WtfService {
       }
 
       const { data: existingPlayers, error: fetchError } = await query;
-
       if (fetchError) throw fetchError;
 
       const updateData = {
@@ -301,10 +306,11 @@ export class WtfService {
         EpicID: normalizedEpicID,
         SteamID: normalizedSteamID,
         LoginTimestamp: currentTimestamp,
+        Type: isDev ? 'dev' : (addPlayerDto.Type ?? null),
       };
 
       if (existingPlayers.length > 0) {
-        // Player exists → Check if this is the first time EpicID is being set
+        // 🔄 Player exists → Update
         const existing = existingPlayers[0];
 
         const { error: updateError } = await this.supabase
@@ -314,13 +320,13 @@ export class WtfService {
 
         if (updateError) throw updateError;
 
-        // Insert login history
+        // 🕒 Insert login history
         await this.supabase.from(this.loginHistoryTable).insert({
           PlayerID: existing.PlayerID,
           GameVersion: addPlayerDto.GameVersion,
         });
 
-        // Only insert PlayerStatistics if EpicID is being added for the first time
+        // 🎯 Insert PlayerStatistics if this is the first time EpicID is being set
         const hadNoEpicIDBefore = !existing.EpicID && normalizedEpicID;
 
         if (hadNoEpicIDBefore) {
@@ -336,7 +342,7 @@ export class WtfService {
 
         return { message: 'Player updated and login recorded' };
       } else {
-        // New player → Insert
+        // 🆕 New player → Insert
         const insertResponse = await this.supabase
           .from(this.playerTable)
           .insert(updateData)
@@ -347,13 +353,13 @@ export class WtfService {
 
         const newPlayerID = insertResponse.data.PlayerID;
 
-        // Insert login history
+        // 🕒 Insert login history
         await this.supabase.from(this.loginHistoryTable).insert({
           PlayerID: newPlayerID,
           GameVersion: addPlayerDto.GameVersion,
         });
 
-        // If EpicID is present on new player, insert PlayerStatistics
+        // 🎯 If EpicID is present on new player, insert PlayerStatistics
         if (normalizedEpicID) {
           const { error: statsInsertError } = await this.supabase
             .from(this.playerStatisticsTable)
