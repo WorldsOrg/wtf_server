@@ -31,16 +31,16 @@ export class WtfController {
     return await this.WtfService.addPlayer(addPlayerDto);
   }
 
-  @Get('/player/:playerID')
+  @Get('/player/:epicID')
   @ApiParam({
-    name: 'playerID',
+    name: 'epicID',
     required: true,
-    description: 'Unique PlayerID (e.g. 00026a04f664427ca9d30a4f2a56d8cb)',
+    description: 'Unique EpicID (e.g. 00026a04f664427ca9d30a4f2a56d8cb)',
     example: '00026a04f664427ca9d30a4f2a56d8cb',
     type: String,
   })
-  async getPlayer(@Param('playerID') playerID: string) {
-    return await this.WtfService.getPlayer(playerID);
+  async getPlayer(@Param('epicID') epicID: string) {
+    return await this.WtfService.getPlayer(epicID);
   }
 
   @Get('/gameData')
@@ -53,7 +53,7 @@ export class WtfController {
     name: 'ids',
     required: true,
     description:
-      'Comma-separated list of PlayerIDs (e.g. 00026a04f664427ca9d30a4f2a56d8cb,00000000000000000000000000000001)',
+      'Comma-separated list of EpicIds (e.g. 00026a04f664427ca9d30a4f2a56d8cb,00000000000000000000000000000001)',
     type: String,
     example:
       '00026a04f664427ca9d30a4f2a56d8cb,00000000000000000000000000000001',

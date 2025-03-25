@@ -372,19 +372,19 @@ export class WtfService {
     }
   }
 
-  async getPlayer(playerID: string) {
+  async getPlayer(epicID: string) {
     try {
       const { data, error } = await this.supabase
         .from(this.playerTable)
         .select('*')
-        .eq('PlayerID', playerID)
+        .eq('EpicID', epicID)
         .single();
 
       if (error) throw error;
 
       return data;
     } catch (error) {
-      console.error(`Error fetching player with ID ${playerID}:`, error);
+      console.error(`Error fetching player with ID ${epicID}:`, error);
       return { error: error.message };
     }
   }
@@ -548,7 +548,7 @@ export class WtfService {
       const { data, error } = await this.supabase
         .from(this.playerStatisticsTable)
         .select('*')
-        .in('PlayerID', playerIDs);
+        .in('EpicID', playerIDs);
 
       if (error) {
         throw error;
