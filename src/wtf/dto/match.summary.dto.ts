@@ -160,3 +160,65 @@ export class PlayerStatisticsDto {
   @ApiProperty()
   MatchID: string;
 }
+
+export class PlayerMatchStatisticsDto {
+  @ApiProperty()
+  EpicID: string;
+
+  @ApiProperty()
+  TeamID: number;
+
+  @ApiProperty()
+  Kills: number;
+
+  @ApiProperty()
+  Assists: number;
+
+  @ApiProperty()
+  Deaths: number;
+
+  @ApiProperty()
+  FirstBlood: number;
+
+  @ApiProperty()
+  LastAlive: number;
+
+  @ApiProperty()
+  Score: number;
+
+  @ApiProperty()
+  ObjectiveCompletions: number;
+
+  @ApiProperty()
+  DamageDealt: number;
+
+  @ApiProperty()
+  DamageTaken: number;
+
+  @ApiProperty()
+  Headshots: number;
+
+  @ApiProperty()
+  ShotsFired: number;
+
+  @ApiProperty()
+  ShotsHit: number;
+
+  @ApiProperty()
+  TimePlayed: string;
+
+  @ApiProperty()
+  RoundsWon: number;
+
+  @ApiProperty()
+  RoundsLost: number;
+
+  @ApiProperty()
+  MatchOutcome: string;
+
+  @ApiProperty()
+  XPEarned: number;
+
+  @ApiProperty()
+  MatchID: string;
+}

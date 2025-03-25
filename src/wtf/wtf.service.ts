@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 import {
   AddMatchSummaryDto,
+  PlayerMatchStatisticsDto,
   PlayerStatisticsDto,
 } from './dto/match.summary.dto';
 import { AddPlayerDto } from './dto/player.dto';
@@ -444,10 +445,17 @@ export class WtfService {
         throw new Error('No valid players found for this match summary');
       }
 
-      // Insert resolved player match results
+      // Insert resolved player match results (only fields allowed in PlayerSpecificMatchSummary)
+      const matchSummaryInserts: PlayerMatchStatisticsDto[] =
+        resolvedResults.map((result) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { PlayerID, ...rest } = result;
+          return rest;
+        });
+
       const { error: playerResultsError } = await this.supabase
         .from(this.playerResultsTable)
-        .insert(resolvedResults);
+        .insert(matchSummaryInserts);
 
       if (playerResultsError) {
         throw new Error(
