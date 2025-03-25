@@ -271,59 +271,104 @@ export class WtfService {
 
   async addPlayer(addPlayerDto: AddPlayerDto) {
     const currentTimestamp = new Date().toISOString();
-    const playerData = {
-      ...addPlayerDto,
-      LoginTimestamp: currentTimestamp,
-    };
+
+    // Normalize empty string values
+    const normalizedEpicID =
+      addPlayerDto.EpicID?.trim() === '' ? null : addPlayerDto.EpicID;
+    const normalizedSteamID =
+      addPlayerDto.SteamID?.trim() === '' ? null : addPlayerDto.SteamID;
 
     try {
-      // Check if player already exists
-      const { data, error: fetchError } = await this.supabase
-        .from(this.playerTable)
-        .select()
-        .eq('PlayerID', addPlayerDto.PlayerID);
+      // Look for existing player by EpicID or SteamID
+      let query = this.supabase.from(this.playerTable).select('*').limit(1);
+
+      if (normalizedEpicID && normalizedSteamID) {
+        query = query.or(
+          `EpicID.eq.${normalizedEpicID},SteamID.eq.${normalizedSteamID}`,
+        );
+      } else if (normalizedEpicID) {
+        query = query.eq('EpicID', normalizedEpicID);
+      } else if (normalizedSteamID) {
+        query = query.eq('SteamID', normalizedSteamID);
+      }
+
+      const { data: existingPlayers, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
 
-      if (data.length > 0) {
-        // Player exists, update record
+      const updateData = {
+        ...addPlayerDto,
+        EpicID: normalizedEpicID,
+        SteamID: normalizedSteamID,
+        LoginTimestamp: currentTimestamp,
+      };
+
+      if (existingPlayers.length > 0) {
+        // Player exists → Check if this is the first time EpicID is being set
+        const existing = existingPlayers[0];
+
         const { error: updateError } = await this.supabase
           .from(this.playerTable)
-          .update(playerData)
-          .eq('PlayerID', addPlayerDto.PlayerID);
+          .update(updateData)
+          .eq('PlayerID', existing.PlayerID);
 
         if (updateError) throw updateError;
-      } else {
-        // New player, insert record
-        const { error: insertError } = await this.supabase
-          .from(this.playerTable)
-          .insert(playerData);
 
-        if (insertError) throw insertError;
-
-        // Insert new row into PlayerStatistics for the new player (Only PlayerID required)
-        const { error: statisticsError } = await this.supabase
-          .from(this.playerStatisticsTable)
-          .insert({
-            PlayerID: addPlayerDto.PlayerID,
-          });
-
-        if (statisticsError) throw statisticsError;
-      }
-
-      // Insert login history
-      const { error: loginHistoryError } = await this.supabase
-        .from(this.loginHistoryTable)
-        .insert({
-          PlayerID: addPlayerDto.PlayerID,
+        // Insert login history
+        await this.supabase.from(this.loginHistoryTable).insert({
+          PlayerID: existing.PlayerID,
           GameVersion: addPlayerDto.GameVersion,
         });
 
-      if (loginHistoryError) throw loginHistoryError;
+        // Only insert PlayerStatistics if EpicID is being added for the first time
+        const hadNoEpicIDBefore = !existing.EpicID && normalizedEpicID;
 
-      return { message: 'New player added successfully' };
+        if (hadNoEpicIDBefore) {
+          const { error: statsInsertError } = await this.supabase
+            .from(this.playerStatisticsTable)
+            .insert({
+              PlayerID: existing.PlayerID,
+              EpicID: normalizedEpicID,
+            });
+
+          if (statsInsertError) throw statsInsertError;
+        }
+
+        return { message: 'Player updated and login recorded' };
+      } else {
+        // New player → Insert
+        const insertResponse = await this.supabase
+          .from(this.playerTable)
+          .insert(updateData)
+          .select('PlayerID, EpicID')
+          .single();
+
+        if (insertResponse.error) throw insertResponse.error;
+
+        const newPlayerID = insertResponse.data.PlayerID;
+
+        // Insert login history
+        await this.supabase.from(this.loginHistoryTable).insert({
+          PlayerID: newPlayerID,
+          GameVersion: addPlayerDto.GameVersion,
+        });
+
+        // If EpicID is present on new player, insert PlayerStatistics
+        if (normalizedEpicID) {
+          const { error: statsInsertError } = await this.supabase
+            .from(this.playerStatisticsTable)
+            .insert({
+              PlayerID: newPlayerID,
+              EpicID: normalizedEpicID,
+            });
+
+          if (statsInsertError) throw statsInsertError;
+        }
+
+        return { message: 'New player created and login recorded' };
+      }
     } catch (error) {
-      return { message: error.message };
+      return { message: error.message || 'An error occurred' };
     }
   }
 

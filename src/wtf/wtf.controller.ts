@@ -24,7 +24,7 @@ export class WtfController {
   @Post('/player')
   @ApiBody({
     type: AddPlayerDto,
-    description: 'Add or update a player by PlayerID and SteamID',
+    description: 'Add or update a player by SteamID or EpicID',
   })
   async addPlayer(@Body() addPlayerDto: AddPlayerDto) {
     console.log('add player called', addPlayerDto);
