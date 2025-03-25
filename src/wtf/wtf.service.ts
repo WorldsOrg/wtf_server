@@ -554,9 +554,9 @@ export class WtfService {
         throw error;
       }
 
-      // Transform the array into an object with PlayerID as the key
+      // Transform the array into an object with EpicID as the key
       const formattedData = data.reduce((acc, playerStat) => {
-        acc[playerStat.PlayerID] = playerStat;
+        acc[playerStat.EpicID] = playerStat;
         return acc;
       }, {});
 
