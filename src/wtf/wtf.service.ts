@@ -619,7 +619,7 @@ export class WtfService {
       // Fetch all players' XP and current levels
       const { data: players, error: fetchError } = await this.supabase
         .from(this.playerStatisticsTable)
-        .select('PlayerID, TotalXP');
+        .select('EpicID, PlayerID, TotalXP');
 
       if (fetchError) throw fetchError;
 
@@ -629,6 +629,7 @@ export class WtfService {
       }
 
       const updates = players.map((player) => ({
+        EpicID: player.EpicID,
         PlayerID: player.PlayerID,
         Level: this.getLevelFromXP(player.TotalXP),
       }));
@@ -636,7 +637,7 @@ export class WtfService {
       // Perform bulk update
       const { error: updateError } = await this.supabase
         .from(this.playerStatisticsTable)
-        .upsert(updates, { onConflict: ['PlayerID'] });
+        .upsert(updates, { onConflict: ['EpicID', 'PlayerID'] });
 
       if (updateError) throw updateError;
 
@@ -655,7 +656,7 @@ export class WtfService {
       const { data: players, error: fetchError } = await this.supabase
         .from(this.playerStatisticsTable)
         .select(
-          'PlayerID, TotalKills, TotalAssists, TotalFirstBloods, TotalLastAlive, TotalRoundsWon, TotalMatches, MatchesWon, TotalXP',
+          'EpicID, PlayerID, TotalKills, TotalAssists, TotalFirstBloods, TotalLastAlive, TotalRoundsWon, TotalMatches, MatchesWon, TotalXP',
         );
 
       if (fetchError) throw fetchError;
@@ -669,6 +670,7 @@ export class WtfService {
       const updates = players.map((player) => {
         const totalXP = this.calculatePlayerXP(player);
         return {
+          EpicID: player.EpicID,
           PlayerID: player.PlayerID,
           TotalXP: totalXP,
           Level: this.getLevelFromXP(totalXP),
@@ -678,7 +680,7 @@ export class WtfService {
       // Perform bulk update
       const { error: updateError } = await this.supabase
         .from(this.playerStatisticsTable)
-        .upsert(updates, { onConflict: ['PlayerID'] });
+        .upsert(updates, { onConflict: ['EpicID', 'PlayerID'] });
 
       if (updateError) throw updateError;
 
