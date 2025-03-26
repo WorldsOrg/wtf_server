@@ -127,6 +127,33 @@ export class PlayerWeaponStatsDto {
 
   @ApiProperty()
   WeaponSwapCount: number;
+
+  @ApiProperty()
+  MissedShots: number;
+
+  @ApiProperty()
+  PenetrationKills: number;
+
+  @ApiProperty()
+  WeaponPickups: number;
+
+  @ApiProperty()
+  DroppedWeaponKills: number;
+
+  @ApiProperty()
+  MeleeKills: number;
+
+  @ApiProperty()
+  SuppressedKills: number;
+
+  @ApiProperty()
+  ADSTime: number;
+
+  @ApiProperty()
+  HipfireShotsFired: number;
+
+  @ApiProperty()
+  HipfireHits: number;
 }
 
 export class PlayerWeaponMatchStatsDto extends PlayerWeaponStatsDto {

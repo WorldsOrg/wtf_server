@@ -39,8 +39,20 @@ export class WtfController {
     example: '00026a04f664427ca9d30a4f2a56d8cb',
     type: String,
   })
-  async getPlayer(@Param('epicID') epicID: string) {
-    return await this.WtfService.getPlayer(epicID);
+  async getPlayerEpic(@Param('epicID') epicID: string) {
+    return await this.WtfService.getPlayerEpic(epicID);
+  }
+
+  @Get('/player/:steamID')
+  @ApiParam({
+    name: 'epicID',
+    required: true,
+    description: 'Unique SteamID (e.g. 76561199321876543)',
+    example: '76561199321876543',
+    type: String,
+  })
+  async getPlayerSteam(@Param('steamID') steamID: string) {
+    return await this.WtfService.getPlayerSteam(steamID);
   }
 
   @Get('/gameData')
@@ -72,6 +84,18 @@ export class WtfController {
   })
   async getPlayerStatsBySteamID(@Param('steamID') steamID: string) {
     return await this.WtfService.getPlayerStatsBySteamID(steamID);
+  }
+
+  @Get('/playerStats/:epicID')
+  @ApiParam({
+    name: 'epicID',
+    required: true,
+    description: 'EpicID of the player (e.g. 00026a04f664427ca9d30a4f2a56d8cb)',
+    example: '00026a04f664427ca9d30a4f2a56d8cb',
+    type: String,
+  })
+  async getPlayerStatsByEpicID(@Param('epicID') epicID: string) {
+    return await this.WtfService.getPlayerStatsByEpicID(epicID);
   }
 
   @Post('/levelProgression')

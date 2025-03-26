@@ -389,7 +389,7 @@ export class WtfService {
     }
   }
 
-  async getPlayer(epicID: string) {
+  async getPlayerEpic(epicID: string) {
     try {
       const { data, error } = await this.supabase
         .from(this.playerTable)
@@ -402,6 +402,23 @@ export class WtfService {
       return data;
     } catch (error) {
       console.error(`Error fetching player with ID ${epicID}:`, error);
+      return { error: error.message };
+    }
+  }
+
+  async getPlayerSteam(steamID: string) {
+    try {
+      const { data, error } = await this.supabase
+        .from(this.playerTable)
+        .select('*')
+        .eq('SteamID', steamID)
+        .single();
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
+      console.error(`Error fetching player with ID ${steamID}:`, error);
       return { error: error.message };
     }
   }
@@ -451,18 +468,27 @@ export class WtfService {
             MatchID: matchID,
             EpicID: player.EpicID,
             WeaponID: weapon.WeaponID,
-            ShotsFired: weapon.ShotsFired,
-            ShotsHit: weapon.ShotsHit,
-            Kills: weapon.Kills,
-            Headshots: weapon.Headshots,
-            DamageDealt: weapon.DamageDealt,
-            TimeUsed: weapon.TimeUsed,
-            Reloads: weapon.Reloads,
-            AmmoUsed: weapon.AmmoUsed,
-            KillAssists: weapon.KillAssists,
-            DeathsWhileUsing: weapon.DeathsWhileUsing,
-            Multikills: weapon.Multikills,
-            WeaponSwapCount: weapon.WeaponSwapCount,
+            ShotsFired: weapon.ShotsFired ?? null,
+            ShotsHit: weapon.ShotsHit ?? null,
+            Kills: weapon.Kills ?? null,
+            Headshots: weapon.Headshots ?? null,
+            DamageDealt: weapon.DamageDealt ?? null,
+            TimeUsed: weapon.TimeUsed ?? null,
+            Reloads: weapon.Reloads ?? null,
+            AmmoUsed: weapon.AmmoUsed ?? null,
+            KillAssists: weapon.KillAssists ?? null,
+            DeathsWhileUsing: weapon.DeathsWhileUsing ?? null,
+            Multikills: weapon.Multikills ?? null,
+            WeaponSwapCount: weapon.WeaponSwapCount ?? null,
+            MissedShots: weapon.MissedShots ?? null,
+            PenetrationKills: weapon.PenetrationKills ?? null,
+            WeaponPickups: weapon.WeaponPickups ?? null,
+            DroppedWeaponKills: weapon.DroppedWeaponKills ?? null,
+            MeleeKills: weapon.MeleeKills ?? null,
+            SuppressedKills: weapon.SuppressedKills ?? null,
+            ADSTime: weapon.ADSTime ?? null,
+            HipfireShotsFired: weapon.HipfireShotsFired ?? null,
+            HipfireHits: weapon.HipfireHits ?? null,
           }));
 
           weaponStatsInserts.push(...weaponInserts);
@@ -617,6 +643,23 @@ export class WtfService {
       return stats;
     } catch (error) {
       console.error(`Error fetching stats for SteamID ${steamID}:`, error);
+      return { error: error.message };
+    }
+  }
+
+  async getPlayerStatsByEpicID(epicID: string) {
+    try {
+      const { data: stats, error: statsError } = await this.supabase
+        .from(this.playerStatisticsTable)
+        .select('*')
+        .eq('EpicID', epicID)
+        .single();
+
+      if (statsError) throw statsError;
+
+      return stats;
+    } catch (error) {
+      console.error(`Error fetching stats for EpicID ${epicID}:`, error);
       return { error: error.message };
     }
   }
