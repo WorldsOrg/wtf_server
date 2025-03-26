@@ -1,8 +1,16 @@
 // src/wtf/wtf.service.ts
 import { Injectable } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
-import { AddMatchSummaryDto, PlayerResultsDto } from './dto/match.summary.dto';
+import {
+  AddMatchSummaryDto,
+  PlayerMatchStatisticsDto,
+  PlayerStatisticsDto,
+} from './dto/match.summary.dto';
 import { AddPlayerDto } from './dto/player.dto';
+import {
+  MatchPlayerStatsInput,
+  TotalPlayerStatsInput,
+} from './dto/player.statistics.dto';
 
 @Injectable()
 export class WtfService {
@@ -15,6 +23,7 @@ export class WtfService {
   private playerTable = 'WtfPlayers';
   private loginHistoryTable = 'LoginHistory';
   private playerStatisticsTable = 'PlayerStatistics';
+  private devSteamIdsTable = 'DevSteamIds';
 
   constructor() {
     this.supabase = createClient(
@@ -33,7 +42,7 @@ export class WtfService {
   async loadDevSteamIds() {
     try {
       const { data, error } = await this.supabase
-        .from('DevSteamIds')
+        .from(this.devSteamIdsTable)
         .select('SteamID');
 
       if (error) throw error;
@@ -118,7 +127,7 @@ export class WtfService {
   /**
    * Calculate XP based on player statistics of the match
    */
-  calculateMatchPlayerXP(playerStats: any): number {
+  calculateMatchPlayerXP(playerStats: MatchPlayerStatsInput): number {
     return (
       (playerStats.Kills || 0) * (this.xpRewards.get('KillXP') || 0) +
       (playerStats.Assists || 0) * (this.xpRewards.get('AssistXP') || 0) +
@@ -136,7 +145,7 @@ export class WtfService {
   /**
    * Calculate XP based on a player's statistics
    */
-  calculatePlayerXP(playerStats: any): number {
+  calculatePlayerXP(playerStats: TotalPlayerStatsInput): number {
     return (
       (playerStats.TotalKills || 0) * (this.xpRewards.get('KillXP') || 0) +
       (playerStats.TotalAssists || 0) * (this.xpRewards.get('AssistXP') || 0) +
@@ -152,9 +161,9 @@ export class WtfService {
     );
   }
 
-  async updatePlayerStatistics(playerResult: PlayerResultsDto) {
+  async updatePlayerStatistics(playerResult: PlayerStatisticsDto) {
     try {
-      const playerID = playerResult.PlayerID;
+      const epicID = playerResult.EpicID;
       const timePlayed = playerResult.TimePlayed || '00:00:00';
 
       // Function to convert "HH:MM:SS" text format to total seconds
@@ -179,7 +188,7 @@ export class WtfService {
         .select(
           'TotalXP, TotalMatches, MatchesWon, MatchesLost, TotalKills, TotalAssists, TotalDeaths, TotalScore, TotalObjectives, TotalDamageDealt, TotalDamageTaken, TotalHeadshots, TotalShotsFired, TotalShotsHit, TotalRoundsWon, TotalRoundsLost, TotalFirstBloods, TotalLastAlive, TotalTimePlayed',
         )
-        .eq('PlayerID', playerID)
+        .eq('EpicID', epicID)
         .single();
 
       if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
@@ -224,7 +233,7 @@ export class WtfService {
         .from(this.playerStatisticsTable)
         .upsert(
           {
-            PlayerID: playerID,
+            EpicID: epicID,
             TotalMatches: prevStats.TotalMatches + 1,
             MatchesWon:
               prevStats.MatchesWon +
@@ -257,13 +266,13 @@ export class WtfService {
               prevStats.TotalLastAlive + (playerResult.LastAlive || 0),
             TotalTimePlayed: newTotalTimePlayed, // Correctly handled as text
           },
-          { onConflict: ['PlayerID'] },
+          { onConflict: ['EpicID'] },
         );
 
       if (error) throw error;
     } catch (error) {
       console.error(
-        `Error updating PlayerStatistics for ${playerResult.PlayerID}:`,
+        `Error updating PlayerStatistics for ${playerResult.EpicID}:`,
         error,
       );
     }
@@ -271,119 +280,199 @@ export class WtfService {
 
   async addPlayer(addPlayerDto: AddPlayerDto) {
     const currentTimestamp = new Date().toISOString();
-    const playerData = {
-      ...addPlayerDto,
-      LoginTimestamp: currentTimestamp,
-    };
+
+    // Normalize empty string values
+    const normalizedEpicID =
+      addPlayerDto.EpicID?.trim() === '' ? null : addPlayerDto.EpicID;
+    const normalizedSteamID =
+      addPlayerDto.SteamID?.trim() === '' ? null : addPlayerDto.SteamID;
 
     try {
-      // Check if player already exists
-      const { data, error: fetchError } = await this.supabase
-        .from(this.playerTable)
-        .select()
-        .eq('PlayerID', addPlayerDto.PlayerID);
+      // 🔍 Check if SteamID is in DevSteamIds
+      const isDev = normalizedSteamID
+        ? this.devSteamIds.has(normalizedSteamID)
+        : false;
 
-      if (fetchError) throw fetchError;
+      // Look for existing player by EpicID or SteamID
+      let query = this.supabase.from(this.playerTable).select('*').limit(1);
 
-      if (data.length > 0) {
-        // Player exists, update record
-        const { error: updateError } = await this.supabase
-          .from(this.playerTable)
-          .update(playerData)
-          .eq('PlayerID', addPlayerDto.PlayerID);
-
-        if (updateError) throw updateError;
-      } else {
-        // New player, insert record
-        const { error: insertError } = await this.supabase
-          .from(this.playerTable)
-          .insert(playerData);
-
-        if (insertError) throw insertError;
-
-        // Insert new row into PlayerStatistics for the new player (Only PlayerID required)
-        const { error: statisticsError } = await this.supabase
-          .from(this.playerStatisticsTable)
-          .insert({
-            PlayerID: addPlayerDto.PlayerID,
-          });
-
-        if (statisticsError) throw statisticsError;
+      if (normalizedEpicID && normalizedSteamID) {
+        query = query.or(
+          `EpicID.eq.${normalizedEpicID},SteamID.eq.${normalizedSteamID}`,
+        );
+      } else if (normalizedEpicID) {
+        query = query.eq('EpicID', normalizedEpicID);
+      } else if (normalizedSteamID) {
+        query = query.eq('SteamID', normalizedSteamID);
       }
 
-      // Insert login history
-      const { error: loginHistoryError } = await this.supabase
-        .from(this.loginHistoryTable)
-        .insert({
-          PlayerID: addPlayerDto.PlayerID,
+      const { data: existingPlayers, error: fetchError } = await query;
+      if (fetchError) throw fetchError;
+
+      const updateData = {
+        ...addPlayerDto,
+        EpicID: normalizedEpicID,
+        SteamID: normalizedSteamID,
+        LoginTimestamp: currentTimestamp,
+        Type: isDev ? 'dev' : (addPlayerDto.Type ?? null),
+      };
+
+      if (existingPlayers.length > 0) {
+        // 🔄 Player exists → Update
+        const existing = existingPlayers[0];
+
+        const { error: updateError } = await this.supabase
+          .from(this.playerTable)
+          .update(updateData)
+          .eq('PlayerID', existing.PlayerID);
+
+        if (updateError) throw updateError;
+
+        // 🕒 Insert login history
+        await this.supabase.from(this.loginHistoryTable).insert({
+          PlayerID: existing.PlayerID,
           GameVersion: addPlayerDto.GameVersion,
         });
 
-      if (loginHistoryError) throw loginHistoryError;
+        // 🎯 Insert PlayerStatistics if this is the first time EpicID is being set
+        const hadNoEpicIDBefore = !existing.EpicID && normalizedEpicID;
 
-      return { message: 'New player added successfully' };
+        if (hadNoEpicIDBefore) {
+          const { error: statsInsertError } = await this.supabase
+            .from(this.playerStatisticsTable)
+            .insert({
+              PlayerID: existing.PlayerID,
+              EpicID: normalizedEpicID,
+            });
+
+          if (statsInsertError) throw statsInsertError;
+        }
+
+        return { message: 'Player updated and login recorded' };
+      } else {
+        // 🆕 New player → Insert
+        const insertResponse = await this.supabase
+          .from(this.playerTable)
+          .insert(updateData)
+          .select('PlayerID, EpicID')
+          .single();
+
+        if (insertResponse.error) throw insertResponse.error;
+
+        const newPlayerID = insertResponse.data.PlayerID;
+
+        // 🕒 Insert login history
+        await this.supabase.from(this.loginHistoryTable).insert({
+          PlayerID: newPlayerID,
+          GameVersion: addPlayerDto.GameVersion,
+        });
+
+        // 🎯 If EpicID is present on new player, insert PlayerStatistics
+        if (normalizedEpicID) {
+          const { error: statsInsertError } = await this.supabase
+            .from(this.playerStatisticsTable)
+            .insert({
+              PlayerID: newPlayerID,
+              EpicID: normalizedEpicID,
+            });
+
+          if (statsInsertError) throw statsInsertError;
+        }
+
+        return { message: 'New player created and login recorded' };
+      }
     } catch (error) {
-      return { message: error.message };
+      return { message: error.message || 'An error occurred' };
     }
   }
 
-  async getPlayer(playerID: string) {
+  async getPlayer(epicID: string) {
     try {
       const { data, error } = await this.supabase
         .from(this.playerTable)
         .select('*')
-        .eq('PlayerID', playerID)
+        .eq('EpicID', epicID)
         .single();
 
       if (error) throw error;
 
       return data;
     } catch (error) {
-      console.error(`Error fetching player with ID ${playerID}:`, error);
+      console.error(`Error fetching player with ID ${epicID}:`, error);
       return { error: error.message };
     }
   }
 
   async addMatchSummary(addMatchSummaryDto: AddMatchSummaryDto) {
     try {
-      // Start by inserting the match summary
+      // Insert the match summary first
       const { data: matchData, error: matchError } = await this.supabase
         .from(this.matchSummaryTable)
         .insert([addMatchSummaryDto.MatchSummary])
         .select()
         .single();
 
-      if (matchError)
+      if (matchError) {
         throw new Error(`Match summary insert failed: ${matchError.message}`);
+      }
 
       const matchID = matchData.MatchID;
+      const resolvedResults: PlayerStatisticsDto[] = [];
 
-      // Prepare player results for bulk insert
-      const playerResults = addMatchSummaryDto.PlayerResults.map((player) => ({
-        ...player,
-        MatchID: matchID, // Associate with inserted match
-      }));
+      // Resolve EpicID → PlayerID for each player
+      for (const player of addMatchSummaryDto.PlayerResults) {
+        const { data: playerRow, error: lookupError } = await this.supabase
+          .from(this.playerTable)
+          .select('PlayerID')
+          .eq('EpicID', player.EpicID)
+          .single();
 
-      // Insert player match results in bulk
+        if (lookupError || !playerRow?.PlayerID) {
+          console.warn(
+            `Skipping player with EpicID ${player.EpicID}: Not found`,
+          );
+          continue; // skip if no valid PlayerID found
+        }
+
+        resolvedResults.push({
+          ...player,
+          PlayerID: playerRow.PlayerID, // Resolved from EpicID
+          MatchID: matchID,
+        });
+      }
+
+      if (resolvedResults.length === 0) {
+        throw new Error('No valid players found for this match summary');
+      }
+
+      // Insert resolved player match results (only fields allowed in PlayerSpecificMatchSummary)
+      const matchSummaryInserts: PlayerMatchStatisticsDto[] =
+        resolvedResults.map((result) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { PlayerID, ...rest } = result;
+          return rest;
+        });
+
       const { error: playerResultsError } = await this.supabase
         .from(this.playerResultsTable)
-        .insert(playerResults);
+        .insert(matchSummaryInserts);
 
-      if (playerResultsError)
+      if (playerResultsError) {
         throw new Error(
           `Player results insert failed: ${playerResultsError.message}`,
         );
+      }
 
-      // Update player statistics for each player in a loop
-      for (const playerResult of addMatchSummaryDto.PlayerResults) {
-        await this.updatePlayerStatistics(playerResult);
+      // Update statistics for each valid player
+      for (const player of resolvedResults) {
+        await this.updatePlayerStatistics(player);
       }
 
       return { message: 'Match summary and player stats updated successfully' };
     } catch (error) {
       console.error('Error in addMatchSummary:', error);
 
-      // Cleanup: Remove the inserted match summary if an error occurred after insertion
+      // Rollback if match summary already has a MatchID
       if (addMatchSummaryDto.MatchSummary?.MatchID) {
         await this.supabase
           .from(this.matchSummaryTable)
@@ -503,15 +592,15 @@ export class WtfService {
       const { data, error } = await this.supabase
         .from(this.playerStatisticsTable)
         .select('*')
-        .in('PlayerID', playerIDs);
+        .in('EpicID', playerIDs);
 
       if (error) {
         throw error;
       }
 
-      // Transform the array into an object with PlayerID as the key
+      // Transform the array into an object with EpicID as the key
       const formattedData = data.reduce((acc, playerStat) => {
-        acc[playerStat.PlayerID] = playerStat;
+        acc[playerStat.EpicID] = playerStat;
         return acc;
       }, {});
 

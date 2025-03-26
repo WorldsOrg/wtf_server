@@ -1,21 +1,21 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AddPlayerDto {
-  @ApiProperty()
-  PlayerID: string;
-
-  @ApiProperty()
+  @ApiProperty({ required: true })
   Username: string;
 
-  @ApiProperty()
-  Region: string;
+  @ApiProperty({ required: false })
+  Region?: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: true })
   GameVersion: string;
 
-  @ApiProperty()
-  SteamID: string;
+  @ApiProperty({ required: false })
+  SteamID?: string;
 
-  @ApiProperty()
-  Type: string;
+  @ApiProperty({ required: false })
+  EpicID?: string;
+
+  @ApiProperty({ required: false })
+  Type?: string;
 }

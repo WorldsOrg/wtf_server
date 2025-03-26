@@ -31,7 +31,7 @@ export class MatchSummaryDto {
 
 export class PlayerResultsDto {
   @ApiProperty()
-  PlayerID: string;
+  EpicID: string;
 
   @ApiProperty()
   TeamID: number;
@@ -94,4 +94,131 @@ export class AddMatchSummaryDto {
 
   @ApiProperty({ type: [PlayerResultsDto] })
   PlayerResults: PlayerResultsDto[];
+}
+
+export class PlayerStatisticsDto {
+  @ApiProperty()
+  PlayerID: string;
+
+  @ApiProperty()
+  EpicID: string;
+
+  @ApiProperty()
+  TeamID: number;
+
+  @ApiProperty()
+  Kills: number;
+
+  @ApiProperty()
+  Assists: number;
+
+  @ApiProperty()
+  Deaths: number;
+
+  @ApiProperty()
+  FirstBlood: number;
+
+  @ApiProperty()
+  LastAlive: number;
+
+  @ApiProperty()
+  Score: number;
+
+  @ApiProperty()
+  ObjectiveCompletions: number;
+
+  @ApiProperty()
+  DamageDealt: number;
+
+  @ApiProperty()
+  DamageTaken: number;
+
+  @ApiProperty()
+  Headshots: number;
+
+  @ApiProperty()
+  ShotsFired: number;
+
+  @ApiProperty()
+  ShotsHit: number;
+
+  @ApiProperty()
+  TimePlayed: string;
+
+  @ApiProperty()
+  RoundsWon: number;
+
+  @ApiProperty()
+  RoundsLost: number;
+
+  @ApiProperty()
+  MatchOutcome: string;
+
+  @ApiProperty()
+  XPEarned: number;
+
+  @ApiProperty()
+  MatchID: string;
+}
+
+export class PlayerMatchStatisticsDto {
+  @ApiProperty()
+  EpicID: string;
+
+  @ApiProperty()
+  TeamID: number;
+
+  @ApiProperty()
+  Kills: number;
+
+  @ApiProperty()
+  Assists: number;
+
+  @ApiProperty()
+  Deaths: number;
+
+  @ApiProperty()
+  FirstBlood: number;
+
+  @ApiProperty()
+  LastAlive: number;
+
+  @ApiProperty()
+  Score: number;
+
+  @ApiProperty()
+  ObjectiveCompletions: number;
+
+  @ApiProperty()
+  DamageDealt: number;
+
+  @ApiProperty()
+  DamageTaken: number;
+
+  @ApiProperty()
+  Headshots: number;
+
+  @ApiProperty()
+  ShotsFired: number;
+
+  @ApiProperty()
+  ShotsHit: number;
+
+  @ApiProperty()
+  TimePlayed: string;
+
+  @ApiProperty()
+  RoundsWon: number;
+
+  @ApiProperty()
+  RoundsLost: number;
+
+  @ApiProperty()
+  MatchOutcome: string;
+
+  @ApiProperty()
+  XPEarned: number;
+
+  @ApiProperty()
+  MatchID: string;
 }
