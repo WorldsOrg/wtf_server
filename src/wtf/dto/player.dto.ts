@@ -15,7 +15,4 @@ export class AddPlayerDto {
 
   @ApiProperty({ required: false })
   EpicID?: string;
-
-  @ApiProperty({ required: false })
-  Type?: string;
 }

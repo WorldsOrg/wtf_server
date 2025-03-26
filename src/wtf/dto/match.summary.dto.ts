@@ -1,5 +1,63 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
 
+// ----- Base -----
+export class BasePlayerStatsDto {
+  @ApiProperty()
+  TeamID: number;
+
+  @ApiProperty()
+  Kills: number;
+
+  @ApiProperty()
+  Assists: number;
+
+  @ApiProperty()
+  Deaths: number;
+
+  @ApiProperty()
+  FirstBlood: number;
+
+  @ApiProperty()
+  LastAlive: number;
+
+  @ApiProperty()
+  Score: number;
+
+  @ApiProperty()
+  ObjectiveCompletions: number;
+
+  @ApiProperty()
+  DamageDealt: number;
+
+  @ApiProperty()
+  DamageTaken: number;
+
+  @ApiProperty()
+  Headshots: number;
+
+  @ApiProperty()
+  ShotsFired: number;
+
+  @ApiProperty()
+  ShotsHit: number;
+
+  @ApiProperty()
+  TimePlayed: string;
+
+  @ApiProperty()
+  RoundsWon: number;
+
+  @ApiProperty()
+  RoundsLost: number;
+
+  @ApiProperty()
+  MatchOutcome: string;
+
+  @ApiProperty()
+  XPEarned: number;
+}
+
+// ----- Match Summary -----
 export class MatchSummaryDto {
   @ApiProperty()
   MatchID: string;
@@ -22,49 +80,17 @@ export class MatchSummaryDto {
   @ApiProperty()
   WinningTeam: number;
 
-  @ApiProperty({ type: Object }) // If you know the structure, use a proper class
+  @ApiProperty({ type: Object }) // Replace with class if FinalScore has structure
   FinalScore: object;
 
   @ApiProperty()
   ServerRegion: string;
 }
 
-export class PlayerResultsDto {
+// ----- Weapon Stats -----
+export class PlayerWeaponStatsDto {
   @ApiProperty()
-  EpicID: string;
-
-  @ApiProperty()
-  TeamID: number;
-
-  @ApiProperty()
-  Kills: number;
-
-  @ApiProperty()
-  Assists: number;
-
-  @ApiProperty()
-  Deaths: number;
-
-  @ApiProperty()
-  FirstBlood: number;
-
-  @ApiProperty()
-  LastAlive: number;
-
-  @ApiProperty()
-  Score: number;
-
-  @ApiProperty()
-  ObjectiveCompletions: number;
-
-  @ApiProperty()
-  DamageDealt: number;
-
-  @ApiProperty()
-  DamageTaken: number;
-
-  @ApiProperty()
-  Headshots: number;
+  WeaponID: number;
 
   @ApiProperty()
   ShotsFired: number;
@@ -73,21 +99,60 @@ export class PlayerResultsDto {
   ShotsHit: number;
 
   @ApiProperty()
-  TimePlayed: string;
+  Kills: number;
 
   @ApiProperty()
-  RoundsWon: number;
+  Headshots: number;
 
   @ApiProperty()
-  RoundsLost: number;
+  DamageDealt: number;
 
   @ApiProperty()
-  MatchOutcome: string;
+  TimeUsed: number;
 
   @ApiProperty()
-  XPEarned: number;
+  Reloads: number;
+
+  @ApiProperty()
+  AmmoUsed: number;
+
+  @ApiProperty()
+  KillAssists: number;
+
+  @ApiProperty()
+  DeathsWhileUsing: number;
+
+  @ApiProperty()
+  Multikills: number;
+
+  @ApiProperty()
+  WeaponSwapCount: number;
 }
 
+export class PlayerWeaponMatchStatsDto extends PlayerWeaponStatsDto {
+  @ApiProperty()
+  MatchID: string;
+
+  @ApiProperty()
+  EpicID: string;
+}
+
+// ----- Player Results (from client) -----
+export class PlayerResultsDto extends BasePlayerStatsDto {
+  @ApiProperty()
+  EpicID: string;
+
+  @ApiProperty({ type: [PlayerWeaponStatsDto], required: false })
+  PlayerWeaponStats?: PlayerWeaponStatsDto[];
+}
+
+// ----- Internally Resolved Player -----
+export class ResolvedPlayerDto extends PlayerResultsDto {
+  PlayerID: string;
+  MatchID: string;
+}
+
+// ----- Incoming Request Body -----
 export class AddMatchSummaryDto {
   @ApiProperty({ type: MatchSummaryDto })
   MatchSummary: MatchSummaryDto;
@@ -96,7 +161,8 @@ export class AddMatchSummaryDto {
   PlayerResults: PlayerResultsDto[];
 }
 
-export class PlayerStatisticsDto {
+// ----- Player Statistics Table Insert -----
+export class PlayerStatisticsDto extends BasePlayerStatsDto {
   @ApiProperty()
   PlayerID: string;
 
@@ -104,121 +170,10 @@ export class PlayerStatisticsDto {
   EpicID: string;
 
   @ApiProperty()
-  TeamID: number;
-
-  @ApiProperty()
-  Kills: number;
-
-  @ApiProperty()
-  Assists: number;
-
-  @ApiProperty()
-  Deaths: number;
-
-  @ApiProperty()
-  FirstBlood: number;
-
-  @ApiProperty()
-  LastAlive: number;
-
-  @ApiProperty()
-  Score: number;
-
-  @ApiProperty()
-  ObjectiveCompletions: number;
-
-  @ApiProperty()
-  DamageDealt: number;
-
-  @ApiProperty()
-  DamageTaken: number;
-
-  @ApiProperty()
-  Headshots: number;
-
-  @ApiProperty()
-  ShotsFired: number;
-
-  @ApiProperty()
-  ShotsHit: number;
-
-  @ApiProperty()
-  TimePlayed: string;
-
-  @ApiProperty()
-  RoundsWon: number;
-
-  @ApiProperty()
-  RoundsLost: number;
-
-  @ApiProperty()
-  MatchOutcome: string;
-
-  @ApiProperty()
-  XPEarned: number;
-
-  @ApiProperty()
   MatchID: string;
 }
 
-export class PlayerMatchStatisticsDto {
-  @ApiProperty()
-  EpicID: string;
-
-  @ApiProperty()
-  TeamID: number;
-
-  @ApiProperty()
-  Kills: number;
-
-  @ApiProperty()
-  Assists: number;
-
-  @ApiProperty()
-  Deaths: number;
-
-  @ApiProperty()
-  FirstBlood: number;
-
-  @ApiProperty()
-  LastAlive: number;
-
-  @ApiProperty()
-  Score: number;
-
-  @ApiProperty()
-  ObjectiveCompletions: number;
-
-  @ApiProperty()
-  DamageDealt: number;
-
-  @ApiProperty()
-  DamageTaken: number;
-
-  @ApiProperty()
-  Headshots: number;
-
-  @ApiProperty()
-  ShotsFired: number;
-
-  @ApiProperty()
-  ShotsHit: number;
-
-  @ApiProperty()
-  TimePlayed: string;
-
-  @ApiProperty()
-  RoundsWon: number;
-
-  @ApiProperty()
-  RoundsLost: number;
-
-  @ApiProperty()
-  MatchOutcome: string;
-
-  @ApiProperty()
-  XPEarned: number;
-
-  @ApiProperty()
-  MatchID: string;
-}
+// ----- PlayerSpecificMatchSummary Insert -----
+export class PlayerMatchStatisticsDto extends OmitType(PlayerStatisticsDto, [
+  'PlayerID',
+] as const) {}
