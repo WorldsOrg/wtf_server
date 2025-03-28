@@ -9,7 +9,13 @@ import {
 import { WtfService } from '../wtf/wtf.service';
 import { AddMatchSummaryDto } from './dto/match.summary.dto';
 import { AddPlayerDto } from './dto/player.dto';
-import { ApiTags, ApiBody, ApiQuery, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBody,
+  ApiQuery,
+  ApiOperation,
+  ApiExcludeEndpoint,
+} from '@nestjs/swagger';
 
 @ApiTags('wtf') // Swagger group name
 @Controller('wtf')
@@ -17,6 +23,11 @@ export class WtfController {
   constructor(private readonly WtfService: WtfService) {}
 
   @Post('/matchSummary')
+  @ApiOperation({
+    summary:
+      'Add match summary with player results and weapon statistics. This also updates player stats.',
+    description: 'The player specific data is referenced by EpicID',
+  })
   @ApiBody({
     type: AddMatchSummaryDto,
     description: 'Add a new match summary with player results',
@@ -29,6 +40,12 @@ export class WtfController {
   }
 
   @Post('/player')
+  @ApiOperation({
+    summary:
+      'Add or update a player referrenced by SteamID, EpicID or both. This also logs a row in LoginHistory.',
+    description:
+      'If there is a player with the same SteamID or EpicID, it will be updated. Otherwise, a new player will be created. A row in LoginHistory will also be created. If neither a SteamID or EpicID is provided, an error will be thrown.',
+  })
   @ApiBody({
     type: AddPlayerDto,
     description: 'Add or update a player by SteamID or EpicID',
@@ -123,16 +140,19 @@ export class WtfController {
   }
 
   @Post('/levelProgression')
+  @ApiExcludeEndpoint()
   async updateLevelProgression() {
     return await this.WtfService.updateLevelProgression();
   }
 
   @Post('/xpRewards')
+  @ApiExcludeEndpoint()
   async updateXpRewards() {
     return await this.WtfService.updateXpRewards();
   }
 
   @Post('/devs')
+  @ApiExcludeEndpoint()
   async updateDevPlayers() {
     return await this.WtfService.updateDevPlayers();
   }

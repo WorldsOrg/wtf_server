@@ -290,6 +290,11 @@ export class WtfService {
     const normalizedSteamID =
       addPlayerDto.SteamID?.trim() === '' ? null : addPlayerDto.SteamID;
 
+    // ❌ Require at least one ID
+    if (!normalizedEpicID && !normalizedSteamID) {
+      throw new Error('You must provide either SteamID or EpicID.');
+    }
+
     try {
       // 🔍 Check if SteamID is in DevSteamIds
       const isDev = normalizedSteamID
