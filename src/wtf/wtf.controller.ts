@@ -139,6 +139,14 @@ export class WtfController {
     if (ids) return await this.WtfService.getPlayerStats(ids);
   }
 
+  @Get('/gameData')
+  @ApiOperation({
+    summary: 'Get game data from the remote config tables',
+  })
+  async getGameData() {
+    return await this.WtfService.getGameData();
+  }
+
   @Post('/levelProgression')
   @ApiExcludeEndpoint()
   async updateLevelProgression() {
