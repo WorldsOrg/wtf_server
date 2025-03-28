@@ -1,8 +1,21 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { WtfService } from '../wtf/wtf.service';
 import { AddMatchSummaryDto } from './dto/match.summary.dto';
 import { AddPlayerDto } from './dto/player.dto';
-import { ApiTags, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBody,
+  ApiQuery,
+  ApiOperation,
+  ApiExcludeEndpoint,
+} from '@nestjs/swagger';
 
 @ApiTags('wtf') // Swagger group name
 @Controller('wtf')
@@ -10,6 +23,11 @@ export class WtfController {
   constructor(private readonly WtfService: WtfService) {}
 
   @Post('/matchSummary')
+  @ApiOperation({
+    summary:
+      'Add match summary with player results and weapon statistics. This also updates player stats.',
+    description: 'The player specific data is referenced by EpicID',
+  })
   @ApiBody({
     type: AddMatchSummaryDto,
     description: 'Add a new match summary with player results',
@@ -22,6 +40,12 @@ export class WtfController {
   }
 
   @Post('/player')
+  @ApiOperation({
+    summary:
+      'Add or update a player referrenced by SteamID, EpicID or both. This also logs a row in LoginHistory.',
+    description:
+      'If there is a player with the same SteamID or EpicID, it will be updated. Otherwise, a new player will be created. A row in LoginHistory will also be created. If neither a SteamID or EpicID is provided, an error will be thrown.',
+  })
   @ApiBody({
     type: AddPlayerDto,
     description: 'Add or update a player by SteamID or EpicID',
@@ -31,60 +55,104 @@ export class WtfController {
     return await this.WtfService.addPlayer(addPlayerDto);
   }
 
-  @Get('/player/:epicID')
-  @ApiParam({
-    name: 'epicID',
-    required: true,
-    description: 'Unique EpicID (e.g. 00026a04f664427ca9d30a4f2a56d8cb)',
-    example: '00026a04f664427ca9d30a4f2a56d8cb',
-    type: String,
+  @Get('/player')
+  @ApiOperation({
+    summary: 'Get player details by EpicID, SteamID',
+    description:
+      'Use only one of the query parameters (`epicID`, `steamID`) to fetch player details. Providing more than one will result in an error.',
   })
-  async getPlayer(@Param('epicID') epicID: string) {
-    return await this.WtfService.getPlayer(epicID);
-  }
+  @ApiQuery({
+    name: 'epicID',
+    required: false,
+    description: 'EpicID of the player (e.g. 00026a04f664427ca9d30a4f2a56d8cb)',
+    example: '00026a04f664427ca9d30a4f2a56d8cb',
+  })
+  @ApiQuery({
+    name: 'steamID',
+    required: false,
+    description: 'SteamID of the player (e.g. 76561198012345678)',
+    example: '76561198012345678',
+  })
+  async getPlayer(
+    @Query('epicID') epicID?: string,
+    @Query('steamID') steamID?: string,
+  ) {
+    if (epicID && steamID) {
+      throw new BadRequestException(
+        'Only one of epicID or steamID can be provided.',
+      );
+    }
 
-  @Get('/gameData')
-  async getGameData() {
-    return await this.WtfService.getGameData();
+    if (epicID) return await this.WtfService.getPlayerEpic(epicID);
+    if (steamID) return await this.WtfService.getPlayerSteam(steamID);
+
+    throw new BadRequestException('You must provide either epicID or steamID.');
   }
 
   @Get('/playerStats')
+  @ApiOperation({
+    summary: 'Get player stats by EpicID, SteamID, or a list of EpicIDs',
+    description:
+      'Use only one of the query parameters (`epicID`, `steamID`, or `ids`) to fetch player statistics. Providing more than one will result in an error.',
+  })
+  @ApiQuery({
+    name: 'epicID',
+    required: false,
+    description: 'EpicID of the player (e.g. 00026a04f664427ca9d30a4f2a56d8cb)',
+    example: '00026a04f664427ca9d30a4f2a56d8cb',
+  })
+  @ApiQuery({
+    name: 'steamID',
+    required: false,
+    description: 'SteamID of the player (e.g. 76561198012345678)',
+    example: '76561198012345678',
+  })
   @ApiQuery({
     name: 'ids',
-    required: true,
+    required: false,
     description:
-      'Comma-separated list of EpicIds (e.g. 00026a04f664427ca9d30a4f2a56d8cb,00000000000000000000000000000001)',
-    type: String,
+      'Comma-separated list of EpicIDs (e.g. 00026a04...,00000000000000000000000000000001)',
     example:
       '00026a04f664427ca9d30a4f2a56d8cb,00000000000000000000000000000001',
   })
-  async getPlayerStats(@Query('ids') ids: string) {
-    return await this.WtfService.getPlayerStats(ids);
-  }
+  async getPlayerStats(
+    @Query('epicID') epicID?: string,
+    @Query('steamID') steamID?: string,
+    @Query('ids') ids?: string,
+  ) {
+    const provided = [epicID, steamID, ids].filter(Boolean);
 
-  @Get('/playerStats/:steamID')
-  @ApiParam({
-    name: 'steamID',
-    required: true,
-    description: 'SteamID of the player (e.g. 76561198012345678)',
-    example: '76561198012345678',
-    type: String,
-  })
-  async getPlayerStatsBySteamID(@Param('steamID') steamID: string) {
-    return await this.WtfService.getPlayerStatsBySteamID(steamID);
+    if (provided.length === 0) {
+      throw new BadRequestException(
+        'You must provide one of epicID, steamID, or ids.',
+      );
+    }
+
+    if (provided.length > 1) {
+      throw new BadRequestException(
+        'Only one of epicID, steamID, or ids can be provided.',
+      );
+    }
+
+    if (epicID) return await this.WtfService.getPlayerStatsByEpicID(epicID);
+    if (steamID) return await this.WtfService.getPlayerStatsBySteamID(steamID);
+    if (ids) return await this.WtfService.getPlayerStats(ids);
   }
 
   @Post('/levelProgression')
+  @ApiExcludeEndpoint()
   async updateLevelProgression() {
     return await this.WtfService.updateLevelProgression();
   }
 
   @Post('/xpRewards')
+  @ApiExcludeEndpoint()
   async updateXpRewards() {
     return await this.WtfService.updateXpRewards();
   }
 
   @Post('/devs')
+  @ApiExcludeEndpoint()
   async updateDevPlayers() {
     return await this.WtfService.updateDevPlayers();
   }

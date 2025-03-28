@@ -5,6 +5,8 @@ import {
   AddMatchSummaryDto,
   PlayerMatchStatisticsDto,
   PlayerStatisticsDto,
+  PlayerWeaponMatchStatsDto,
+  ResolvedPlayerDto,
 } from './dto/match.summary.dto';
 import { AddPlayerDto } from './dto/player.dto';
 import {
@@ -24,6 +26,7 @@ export class WtfService {
   private loginHistoryTable = 'LoginHistory';
   private playerStatisticsTable = 'PlayerStatistics';
   private devSteamIdsTable = 'DevSteamIds';
+  private weaponStatsTable = 'PlayerWeaponMatchStats';
 
   constructor() {
     this.supabase = createClient(
@@ -287,6 +290,11 @@ export class WtfService {
     const normalizedSteamID =
       addPlayerDto.SteamID?.trim() === '' ? null : addPlayerDto.SteamID;
 
+    // ❌ Require at least one ID
+    if (!normalizedEpicID && !normalizedSteamID) {
+      throw new Error('You must provide either SteamID or EpicID.');
+    }
+
     try {
       // 🔍 Check if SteamID is in DevSteamIds
       const isDev = normalizedSteamID
@@ -314,7 +322,7 @@ export class WtfService {
         EpicID: normalizedEpicID,
         SteamID: normalizedSteamID,
         LoginTimestamp: currentTimestamp,
-        Type: isDev ? 'dev' : (addPlayerDto.Type ?? null),
+        Type: isDev ? 'dev' : null,
       };
 
       if (existingPlayers.length > 0) {
@@ -386,7 +394,7 @@ export class WtfService {
     }
   }
 
-  async getPlayer(epicID: string) {
+  async getPlayerEpic(epicID: string) {
     try {
       const { data, error } = await this.supabase
         .from(this.playerTable)
@@ -403,9 +411,26 @@ export class WtfService {
     }
   }
 
+  async getPlayerSteam(steamID: string) {
+    try {
+      const { data, error } = await this.supabase
+        .from(this.playerTable)
+        .select('*')
+        .eq('SteamID', steamID)
+        .single();
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
+      console.error(`Error fetching player with ID ${steamID}:`, error);
+      return { error: error.message };
+    }
+  }
+
   async addMatchSummary(addMatchSummaryDto: AddMatchSummaryDto) {
     try {
-      // Insert the match summary first
+      // 1. Insert match summary
       const { data: matchData, error: matchError } = await this.supabase
         .from(this.matchSummaryTable)
         .insert([addMatchSummaryDto.MatchSummary])
@@ -417,9 +442,10 @@ export class WtfService {
       }
 
       const matchID = matchData.MatchID;
-      const resolvedResults: PlayerStatisticsDto[] = [];
+      const resolvedResults: ResolvedPlayerDto[] = [];
+      const weaponStatsInserts: PlayerWeaponMatchStatsDto[] = [];
 
-      // Resolve EpicID → PlayerID for each player
+      // 2. Resolve PlayerID from EpicID for each player
       for (const player of addMatchSummaryDto.PlayerResults) {
         const { data: playerRow, error: lookupError } = await this.supabase
           .from(this.playerTable)
@@ -431,27 +457,57 @@ export class WtfService {
           console.warn(
             `Skipping player with EpicID ${player.EpicID}: Not found`,
           );
-          continue; // skip if no valid PlayerID found
+          continue;
         }
 
+        // Add player match stats with resolved PlayerID
         resolvedResults.push({
           ...player,
-          PlayerID: playerRow.PlayerID, // Resolved from EpicID
+          PlayerID: playerRow.PlayerID,
           MatchID: matchID,
         });
+
+        // Collect weapon stats if present
+        if (player.PlayerWeaponStats?.length > 0) {
+          const weaponInserts = player.PlayerWeaponStats.map((weapon) => ({
+            MatchID: matchID,
+            EpicID: player.EpicID,
+            WeaponID: weapon.WeaponID,
+            ShotsFired: weapon.ShotsFired ?? null,
+            ShotsHit: weapon.ShotsHit ?? null,
+            Kills: weapon.Kills ?? null,
+            Headshots: weapon.Headshots ?? null,
+            DamageDealt: weapon.DamageDealt ?? null,
+            TimeUsed: weapon.TimeUsed ?? null,
+            Reloads: weapon.Reloads ?? null,
+            AmmoUsed: weapon.AmmoUsed ?? null,
+            KillAssists: weapon.KillAssists ?? null,
+            DeathsWhileUsing: weapon.DeathsWhileUsing ?? null,
+            Multikills: weapon.Multikills ?? null,
+            WeaponSwapCount: weapon.WeaponSwapCount ?? null,
+            MissedShots: weapon.MissedShots ?? null,
+            PenetrationKills: weapon.PenetrationKills ?? null,
+            WeaponPickups: weapon.WeaponPickups ?? null,
+            DroppedWeaponKills: weapon.DroppedWeaponKills ?? null,
+            MeleeKills: weapon.MeleeKills ?? null,
+            SuppressedKills: weapon.SuppressedKills ?? null,
+            ADSTime: weapon.ADSTime ?? null,
+            HipfireShotsFired: weapon.HipfireShotsFired ?? null,
+            HipfireHits: weapon.HipfireHits ?? null,
+          }));
+
+          weaponStatsInserts.push(...weaponInserts);
+        }
       }
 
       if (resolvedResults.length === 0) {
         throw new Error('No valid players found for this match summary');
       }
 
-      // Insert resolved player match results (only fields allowed in PlayerSpecificMatchSummary)
+      // 3. Insert PlayerSpecificMatchSummary entries
       const matchSummaryInserts: PlayerMatchStatisticsDto[] =
-        resolvedResults.map((result) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { PlayerID, ...rest } = result;
-          return rest;
-        });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        resolvedResults.map(({ PlayerWeaponStats, PlayerID, ...rest }) => rest);
 
       const { error: playerResultsError } = await this.supabase
         .from(this.playerResultsTable)
@@ -463,16 +519,32 @@ export class WtfService {
         );
       }
 
-      // Update statistics for each valid player
+      // 4. Insert PlayerWeaponMatchStats entries (if any)
+      if (weaponStatsInserts.length > 0) {
+        const { error: weaponStatsError } = await this.supabase
+          .from(this.weaponStatsTable)
+          .insert(weaponStatsInserts);
+
+        if (weaponStatsError) {
+          throw new Error(
+            `Weapon stats insert failed: ${weaponStatsError.message}`,
+          );
+        }
+      }
+
+      // 5. Update long-term player statistics (XP, K/D, etc.)
       for (const player of resolvedResults) {
         await this.updatePlayerStatistics(player);
       }
 
-      return { message: 'Match summary and player stats updated successfully' };
+      return {
+        message:
+          'Match summary, player results, and weapon stats added successfully',
+      };
     } catch (error) {
       console.error('Error in addMatchSummary:', error);
 
-      // Rollback if match summary already has a MatchID
+      // Optional rollback if match insert succeeded
       if (addMatchSummaryDto.MatchSummary?.MatchID) {
         await this.supabase
           .from(this.matchSummaryTable)
@@ -576,6 +648,23 @@ export class WtfService {
       return stats;
     } catch (error) {
       console.error(`Error fetching stats for SteamID ${steamID}:`, error);
+      return { error: error.message };
+    }
+  }
+
+  async getPlayerStatsByEpicID(epicID: string) {
+    try {
+      const { data: stats, error: statsError } = await this.supabase
+        .from(this.playerStatisticsTable)
+        .select('*')
+        .eq('EpicID', epicID)
+        .single();
+
+      if (statsError) throw statsError;
+
+      return stats;
+    } catch (error) {
+      console.error(`Error fetching stats for EpicID ${epicID}:`, error);
       return { error: error.message };
     }
   }
@@ -695,6 +784,8 @@ export class WtfService {
    */
   async updateDevPlayers() {
     try {
+      await this.loadDevSteamIds();
+
       if (this.devSteamIds.size === 0) {
         console.log('No developer Steam IDs loaded.');
         return;
