@@ -587,7 +587,7 @@ export class WtfService {
         this.supabase.from('MovementStats').select('*'),
         this.supabase
           .from('RemoteConfig')
-          .select('id, config, note')
+          .select('id, note')
           .eq('isActive', true)
           .single(),
       ]);
