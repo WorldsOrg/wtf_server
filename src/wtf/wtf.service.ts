@@ -558,12 +558,12 @@ export class WtfService {
 
   async getGameData() {
     try {
-      // Fetch data from all tables concurrently
       const [
         { data: levelProgressionData, error: levelError },
         { data: weaponStatsData, error: weaponError },
         { data: xpRewardsData, error: xpError },
         { data: movementStatsData, error: movementError },
+        { data: remoteConfigData, error: remoteError },
       ] = await Promise.all([
         this.supabase.from('LevelProgression').select('*'),
         this.supabase.from('WeaponStats').select(`
@@ -583,40 +583,53 @@ export class WtfService {
           "FireRate",
           "MaximumRange"
         `),
-        this.supabase.from('XPRewards').select('*').single(), // Expecting a single row
+        this.supabase.from('XPRewards').select('*').single(),
         this.supabase.from('MovementStats').select('*'),
+        this.supabase
+          .from('RemoteConfig')
+          .select('id, note')
+          .eq('isActive', true)
+          .single(),
       ]);
 
-      // Handle errors if any
-      if (levelError || weaponError || xpError || movementError) {
+      if (
+        levelError ||
+        weaponError ||
+        xpError ||
+        movementError ||
+        remoteError
+      ) {
         throw new Error(
           `Error fetching data: ${
             levelError?.message ||
             weaponError?.message ||
             xpError?.message ||
-            movementError?.message
+            movementError?.message ||
+            remoteError?.message
           }`,
         );
       }
 
-      // Structure the final object
       const gameData = {
         LevelProgression: levelProgressionData.reduce((acc, row) => {
           acc[row.Level] = row.XP;
           return acc;
-        }, {}), // Convert to { Level: XP } mapping
-
+        }, {}),
         WeaponStats: weaponStatsData.reduce((acc, weapon) => {
           acc[weapon.Name] = { ...weapon };
           return acc;
-        }, {}), // Convert to { "WeaponName": {weapon data} }
-
-        XPRewards: xpRewardsData, // Single row expected, keeping as an object
-
+        }, {}),
+        XPRewards: xpRewardsData,
         MovementStats: movementStatsData.reduce((acc, row) => {
           acc[row.Level] = { ...row };
           return acc;
-        }, {}), // Convert to { Level: {movement data} }
+        }, {}),
+        RemoteConfig: remoteConfigData
+          ? {
+              id: remoteConfigData.id,
+              note: remoteConfigData.note,
+            }
+          : null,
       };
 
       return gameData;
