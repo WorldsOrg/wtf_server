@@ -24,6 +24,7 @@ export class WtfController {
 
   @Post('weaponFire')
   async logWeaponFire(@Body() body: { data: any }) {
+    console.log('weapon fired ', body.data)
     return this.WtfService.addWeaponFireLog(body.data);
   }
 
