@@ -27,6 +27,7 @@ export class WtfService {
   private playerStatisticsTable = 'PlayerStatistics';
   private devSteamIdsTable = 'DevSteamIds';
   private weaponStatsTable = 'PlayerWeaponMatchStats';
+  private unrealEditorEpicID = 'unrealeditor';
 
   constructor() {
     this.supabase = createClient(
@@ -450,7 +451,12 @@ export class WtfService {
         const { data: playerRow, error: lookupError } = await this.supabase
           .from(this.playerTable)
           .select('PlayerID')
-          .eq('EpicID', player.EpicID)
+          .eq(
+            'EpicID',
+            player.EpicID == '' || null
+              ? this.unrealEditorEpicID
+              : player.EpicID,
+          )
           .single();
 
         if (lookupError || !playerRow?.PlayerID) {
@@ -465,6 +471,8 @@ export class WtfService {
           ...player,
           PlayerID: playerRow.PlayerID,
           MatchID: matchID,
+          DamageDealt: Math.round(player.DamageDealt), // Round DamageDealt
+          DamageTaken: Math.round(player.DamageTaken), // Round DamageTaken
         });
 
         // Collect weapon stats if present
