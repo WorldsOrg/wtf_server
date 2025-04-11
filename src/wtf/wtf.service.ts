@@ -473,6 +473,10 @@ export class WtfService {
           MatchID: matchID,
           DamageDealt: Math.round(player.DamageDealt), // Round DamageDealt
           DamageTaken: Math.round(player.DamageTaken), // Round DamageTaken
+          EpicID:
+            player.EpicID == '' || null
+              ? this.unrealEditorEpicID
+              : player.EpicID,
         });
 
         // Collect weapon stats if present
