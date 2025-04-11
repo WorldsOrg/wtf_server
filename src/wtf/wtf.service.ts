@@ -477,7 +477,7 @@ export class WtfService {
             ShotsHit: weapon.ShotsHit ?? null,
             Kills: weapon.Kills ?? null,
             Headshots: weapon.Headshots ?? null,
-            DamageDealt: weapon.DamageDealt ?? null,
+            DamageDealt: Math.round(weapon.DamageDealt) ?? null,
             TimeUsed: weapon.TimeUsed ?? null,
             Reloads: weapon.Reloads ?? null,
             AmmoUsed: weapon.AmmoUsed ?? null,
