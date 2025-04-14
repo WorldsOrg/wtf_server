@@ -127,23 +127,6 @@ export class WtfService {
     return currentLevel; // Return the last assigned level
   }
 
-  async addWeaponFireLog(jsonData: any) {
-    try {
-      const { error } = await this.supabase.from('UnrealTest').insert([
-        {
-          data: jsonData, // this will be stored in the JSON column
-        },
-      ]);
-  
-      if (error) throw error;
-  
-      return { message: 'Weapon fire log added successfully' };
-    } catch (error) {
-      console.error('Error inserting weapon fire log:', error);
-      return { message: `Insert failed: ${error.message}` };
-    }
-  }  
-
   /**
    * Calculate XP based on player statistics of the match
    */

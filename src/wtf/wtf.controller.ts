@@ -22,12 +22,6 @@ import {
 export class WtfController {
   constructor(private readonly WtfService: WtfService) {}
 
-  @Post('weaponFire')
-  async logWeaponFire(@Body() body: { data: any }) {
-    console.log('weapon fired ', body.data)
-    return this.WtfService.addWeaponFireLog(body.data);
-  }
-
   @Post('/matchSummary')
   @ApiOperation({
     summary:
