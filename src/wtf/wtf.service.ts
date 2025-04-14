@@ -5,7 +5,7 @@ import {
   AddMatchSummaryDto,
   PlayerMatchStatisticsDto,
   PlayerStatisticsDto,
-  PlayerWeaponMatchStatsDto,
+  PlayerWeaponMatchStatsInsert,
   ResolvedPlayerDto,
 } from './dto/match.summary.dto';
 import { AddPlayerDto } from './dto/player.dto';
@@ -20,13 +20,16 @@ export class WtfService {
   private levelProgression = new Map<number, number>(); // XP -> Level
   private xpRewards = new Map<string, number>(); // Action -> XP
   private devSteamIds = new Set<string>(); // Store dev Steam IDs in memory
+  private weaponNameToId: Map<string, number> = new Map();
   private matchSummaryTable = 'MatchSummary';
   private playerResultsTable = 'PlayerSpecificMatchSummary';
   private playerTable = 'WtfPlayers';
   private loginHistoryTable = 'LoginHistory';
   private playerStatisticsTable = 'PlayerStatistics';
   private devSteamIdsTable = 'DevSteamIds';
+  private weaponsTable = 'WeaponStats';
   private weaponStatsTable = 'PlayerWeaponMatchStats';
+  private unrealEditorEpicID = 'unrealeditor';
 
   constructor() {
     this.supabase = createClient(
@@ -34,9 +37,30 @@ export class WtfService {
       process.env.SUPABASE_ANON_KEY,
     );
 
+    this.loadWeaponStats(); // Load weapon stats and map names to IDs
     this.loadLevelProgression(); // Load XP to level mapping
     this.loadXPRewards(); // Load XP rewards
     this.loadDevSteamIds(); // Load dev Steam IDs on startup
+  }
+
+  /**
+   * Load Weapon Stats and map Name to ID
+   */
+  async loadWeaponStats() {
+    try {
+      const { data, error } = await this.supabase
+        .from(this.weaponsTable)
+        .select('id, Name');
+
+      if (error) throw error;
+
+      this.weaponNameToId = new Map<string, number>();
+      data.forEach((row) => {
+        this.weaponNameToId.set(row.Name, row.id);
+      });
+    } catch (error) {
+      console.error('Error loading weapon stats:', error);
+    }
   }
 
   /**
@@ -443,14 +467,19 @@ export class WtfService {
 
       const matchID = matchData.MatchID;
       const resolvedResults: ResolvedPlayerDto[] = [];
-      const weaponStatsInserts: PlayerWeaponMatchStatsDto[] = [];
+      const weaponStatsInserts: PlayerWeaponMatchStatsInsert[] = [];
 
       // 2. Resolve PlayerID from EpicID for each player
       for (const player of addMatchSummaryDto.PlayerResults) {
         const { data: playerRow, error: lookupError } = await this.supabase
           .from(this.playerTable)
           .select('PlayerID')
-          .eq('EpicID', player.EpicID)
+          .eq(
+            'EpicID',
+            player.EpicID == '' || null
+              ? this.unrealEditorEpicID
+              : player.EpicID,
+          )
           .single();
 
         if (lookupError || !playerRow?.PlayerID) {
@@ -465,6 +494,12 @@ export class WtfService {
           ...player,
           PlayerID: playerRow.PlayerID,
           MatchID: matchID,
+          DamageDealt: Math.round(player.DamageDealt), // Round DamageDealt
+          DamageTaken: Math.round(player.DamageTaken), // Round DamageTaken
+          EpicID:
+            player.EpicID == '' || null
+              ? this.unrealEditorEpicID
+              : player.EpicID,
         });
 
         // Collect weapon stats if present
@@ -472,12 +507,12 @@ export class WtfService {
           const weaponInserts = player.PlayerWeaponStats.map((weapon) => ({
             MatchID: matchID,
             EpicID: player.EpicID,
-            WeaponID: weapon.WeaponID,
+            WeaponID: this.weaponNameToId.get(weapon.WeaponName) || null,
             ShotsFired: weapon.ShotsFired ?? null,
             ShotsHit: weapon.ShotsHit ?? null,
             Kills: weapon.Kills ?? null,
             Headshots: weapon.Headshots ?? null,
-            DamageDealt: weapon.DamageDealt ?? null,
+            DamageDealt: Math.round(weapon.DamageDealt) ?? null,
             TimeUsed: weapon.TimeUsed ?? null,
             Reloads: weapon.Reloads ?? null,
             AmmoUsed: weapon.AmmoUsed ?? null,
@@ -511,7 +546,8 @@ export class WtfService {
 
       const { error: playerResultsError } = await this.supabase
         .from(this.playerResultsTable)
-        .insert(matchSummaryInserts);
+        .insert(matchSummaryInserts)
+        .select('MatchID, EpicID'); // Enforces read-after-write visibility
 
       if (playerResultsError) {
         throw new Error(

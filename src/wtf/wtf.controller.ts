@@ -33,7 +33,10 @@ export class WtfController {
     description: 'Add a new match summary with player results',
   })
   async addMatchSummary(@Body() addMatchSummaryDto: AddMatchSummaryDto) {
-    console.log('add match summary called', addMatchSummaryDto);
+    console.log(
+      'add match summary called',
+      JSON.parse(JSON.stringify(addMatchSummaryDto)),
+    );
     const res = await this.WtfService.addMatchSummary(addMatchSummaryDto);
     console.log('add match summary response', res);
     return res;

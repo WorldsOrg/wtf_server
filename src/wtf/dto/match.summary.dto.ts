@@ -90,7 +90,7 @@ export class MatchSummaryDto {
 // ----- Weapon Stats -----
 export class PlayerWeaponStatsDto {
   @ApiProperty()
-  WeaponID: number;
+  WeaponName: string;
 
   @ApiProperty()
   ShotsFired: number;
@@ -156,12 +156,31 @@ export class PlayerWeaponStatsDto {
   HipfireHits: number;
 }
 
-export class PlayerWeaponMatchStatsDto extends PlayerWeaponStatsDto {
-  @ApiProperty()
+export interface PlayerWeaponMatchStatsInsert {
   MatchID: string;
-
-  @ApiProperty()
   EpicID: string;
+  WeaponID: number | null;
+  ShotsFired?: number | null;
+  ShotsHit?: number | null;
+  Kills?: number | null;
+  Headshots?: number | null;
+  DamageDealt?: number | null;
+  TimeUsed?: number | null;
+  Reloads?: number | null;
+  AmmoUsed?: number | null;
+  KillAssists?: number | null;
+  DeathsWhileUsing?: number | null;
+  Multikills?: number | null;
+  WeaponSwapCount?: number | null;
+  MissedShots?: number | null;
+  PenetrationKills?: number | null;
+  WeaponPickups?: number | null;
+  DroppedWeaponKills?: number | null;
+  MeleeKills?: number | null;
+  SuppressedKills?: number | null;
+  ADSTime?: number | null;
+  HipfireShotsFired?: number | null;
+  HipfireHits?: number | null;
 }
 
 // ----- Player Results (from client) -----
