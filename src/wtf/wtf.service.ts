@@ -546,7 +546,8 @@ export class WtfService {
 
       const { error: playerResultsError } = await this.supabase
         .from(this.playerResultsTable)
-        .insert(matchSummaryInserts);
+        .insert(matchSummaryInserts)
+        .select('MatchID, EpicID'); // Enforces read-after-write visibility
 
       if (playerResultsError) {
         throw new Error(
