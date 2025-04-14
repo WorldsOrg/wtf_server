@@ -5,7 +5,7 @@ import {
   AddMatchSummaryDto,
   PlayerMatchStatisticsDto,
   PlayerStatisticsDto,
-  PlayerWeaponMatchStatsDto,
+  PlayerWeaponMatchStatsInsert,
   ResolvedPlayerDto,
 } from './dto/match.summary.dto';
 import { AddPlayerDto } from './dto/player.dto';
@@ -20,12 +20,14 @@ export class WtfService {
   private levelProgression = new Map<number, number>(); // XP -> Level
   private xpRewards = new Map<string, number>(); // Action -> XP
   private devSteamIds = new Set<string>(); // Store dev Steam IDs in memory
+  private weaponNameToId: Map<string, number> = new Map();
   private matchSummaryTable = 'MatchSummary';
   private playerResultsTable = 'PlayerSpecificMatchSummary';
   private playerTable = 'WtfPlayers';
   private loginHistoryTable = 'LoginHistory';
   private playerStatisticsTable = 'PlayerStatistics';
   private devSteamIdsTable = 'DevSteamIds';
+  private weaponsTable = 'WeaponStats';
   private weaponStatsTable = 'PlayerWeaponMatchStats';
   private unrealEditorEpicID = 'unrealeditor';
 
@@ -35,9 +37,30 @@ export class WtfService {
       process.env.SUPABASE_ANON_KEY,
     );
 
+    this.loadWeaponStats(); // Load weapon stats and map names to IDs
     this.loadLevelProgression(); // Load XP to level mapping
     this.loadXPRewards(); // Load XP rewards
     this.loadDevSteamIds(); // Load dev Steam IDs on startup
+  }
+
+  /**
+   * Load Weapon Stats and map Name to ID
+   */
+  async loadWeaponStats() {
+    try {
+      const { data, error } = await this.supabase
+        .from(this.weaponsTable)
+        .select('id, Name');
+
+      if (error) throw error;
+
+      this.weaponNameToId = new Map<string, number>();
+      data.forEach((row) => {
+        this.weaponNameToId.set(row.Name, row.id);
+      });
+    } catch (error) {
+      console.error('Error loading weapon stats:', error);
+    }
   }
 
   /**
@@ -444,7 +467,7 @@ export class WtfService {
 
       const matchID = matchData.MatchID;
       const resolvedResults: ResolvedPlayerDto[] = [];
-      const weaponStatsInserts: PlayerWeaponMatchStatsDto[] = [];
+      const weaponStatsInserts: PlayerWeaponMatchStatsInsert[] = [];
 
       // 2. Resolve PlayerID from EpicID for each player
       for (const player of addMatchSummaryDto.PlayerResults) {
@@ -484,7 +507,7 @@ export class WtfService {
           const weaponInserts = player.PlayerWeaponStats.map((weapon) => ({
             MatchID: matchID,
             EpicID: player.EpicID,
-            WeaponID: weapon.WeaponID,
+            WeaponID: this.weaponNameToId.get(weapon.WeaponName) || null,
             ShotsFired: weapon.ShotsFired ?? null,
             ShotsHit: weapon.ShotsHit ?? null,
             Kills: weapon.Kills ?? null,
