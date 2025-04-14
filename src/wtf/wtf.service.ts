@@ -471,15 +471,12 @@ export class WtfService {
 
       // 2. Resolve PlayerID from EpicID for each player
       for (const player of addMatchSummaryDto.PlayerResults) {
+        const epicID =
+          player.EpicID == '' || null ? this.unrealEditorEpicID : player.EpicID;
         const { data: playerRow, error: lookupError } = await this.supabase
           .from(this.playerTable)
           .select('PlayerID')
-          .eq(
-            'EpicID',
-            player.EpicID == '' || null
-              ? this.unrealEditorEpicID
-              : player.EpicID,
-          )
+          .eq('EpicID', epicID)
           .single();
 
         if (lookupError || !playerRow?.PlayerID) {
@@ -496,17 +493,14 @@ export class WtfService {
           MatchID: matchID,
           DamageDealt: Math.round(player.DamageDealt), // Round DamageDealt
           DamageTaken: Math.round(player.DamageTaken), // Round DamageTaken
-          EpicID:
-            player.EpicID == '' || null
-              ? this.unrealEditorEpicID
-              : player.EpicID,
+          EpicID: epicID,
         });
 
         // Collect weapon stats if present
         if (player.PlayerWeaponStats?.length > 0) {
           const weaponInserts = player.PlayerWeaponStats.map((weapon) => ({
             MatchID: matchID,
-            EpicID: player.EpicID,
+            EpicID: epicID,
             WeaponID: this.weaponNameToId.get(weapon.WeaponName) || null,
             ShotsFired: weapon.ShotsFired ?? null,
             ShotsHit: weapon.ShotsHit ?? null,

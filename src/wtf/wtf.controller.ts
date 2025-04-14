@@ -16,6 +16,7 @@ import {
   ApiOperation,
   ApiExcludeEndpoint,
 } from '@nestjs/swagger';
+import * as util from 'util';
 
 @ApiTags('wtf') // Swagger group name
 @Controller('wtf')
@@ -35,7 +36,7 @@ export class WtfController {
   async addMatchSummary(@Body() addMatchSummaryDto: AddMatchSummaryDto) {
     console.log(
       'add match summary called',
-      JSON.parse(JSON.stringify(addMatchSummaryDto)),
+      util.inspect(addMatchSummaryDto, { depth: null, colors: true }),
     );
     const res = await this.WtfService.addMatchSummary(addMatchSummaryDto);
     console.log('add match summary response', res);
