@@ -213,7 +213,7 @@ export class WtfService {
       const { data: currentStats, error: fetchError } = await this.supabase
         .from('PlayerStatistics')
         .select(
-          'TotalXP, TotalMatches, MatchesWon, MatchesLost, TotalKills, TotalAssists, TotalDeaths, TotalScore, TotalObjectives, TotalDamageDealt, TotalDamageTaken, TotalHeadshots, TotalShotsFired, TotalShotsHit, TotalRoundsWon, TotalRoundsLost, TotalFirstBloods, TotalLastAlive, TotalTimePlayed',
+          'TotalXP, TotalMatches, MatchesWon, MatchesLost, TotalKills, TotalAssists, TotalDeaths, TotalScore, TotalObjectives, TotalDamageDealt, TotalDamageTaken, TotalHeadshots, TotalShotsFired, TotalShotsHit, TotalRoundsWon, TotalRoundsLost, TotalFirstBloods, TotalLastAlive, TotalTimePlayed, TotalMatchesQuitEarly',
         )
         .eq('EpicID', epicID)
         .single();
@@ -241,6 +241,7 @@ export class WtfService {
         TotalFirstBloods: 0,
         TotalLastAlive: 0,
         TotalTimePlayed: '00:00:00',
+        TotalMatchesQuitEarly: 0,
       };
 
       // Convert TotalTimePlayed (text) to seconds and sum
@@ -252,8 +253,7 @@ export class WtfService {
       const newTotalTimePlayed = secondsToTimeString(newTotalSeconds);
 
       // Accumulate new stats
-      const totalXP =
-        prevStats.TotalXP + this.calculateMatchPlayerXP(playerResult);
+      const totalXP = prevStats.TotalXP + playerResult.XPEarned;
       const playerLevel = this.getLevelFromXP(totalXP);
 
       const { error } = await this.supabase
@@ -264,10 +264,16 @@ export class WtfService {
             TotalMatches: prevStats.TotalMatches + 1,
             MatchesWon:
               prevStats.MatchesWon +
-              (playerResult.MatchOutcome === 'Win' ? 1 : 0),
+              (playerResult.MatchOutcome === 'Win' &&
+              playerResult.QuitEarly !== 1
+                ? 1
+                : 0),
             MatchesLost:
               prevStats.MatchesLost +
-              (playerResult.MatchOutcome === 'Loss' ? 1 : 0),
+              (playerResult.MatchOutcome === 'Loss' ||
+              playerResult.QuitEarly === 1
+                ? 1
+                : 0),
             TotalKills: prevStats.TotalKills + playerResult.Kills,
             TotalAssists: prevStats.TotalAssists + playerResult.Assists,
             TotalDeaths: prevStats.TotalDeaths + playerResult.Deaths,
@@ -292,6 +298,8 @@ export class WtfService {
             TotalLastAlive:
               prevStats.TotalLastAlive + (playerResult.LastAlive || 0),
             TotalTimePlayed: newTotalTimePlayed, // Correctly handled as text
+            TotalMatchesQuitEarly:
+              prevStats.TotalMatchesQuitEarly + playerResult.QuitEarly,
           },
           { onConflict: ['EpicID'] },
         );
@@ -486,6 +494,9 @@ export class WtfService {
           continue;
         }
 
+        const matchXP =
+          player.QuitEarly == 1 ? 0 : this.calculateMatchPlayerXP(player);
+
         // Add player match stats with resolved PlayerID
         resolvedResults.push({
           ...player,
@@ -494,6 +505,7 @@ export class WtfService {
           DamageDealt: Math.round(player.DamageDealt), // Round DamageDealt
           DamageTaken: Math.round(player.DamageTaken), // Round DamageTaken
           EpicID: epicID,
+          XPEarned: matchXP,
         });
 
         // Collect weapon stats if present
