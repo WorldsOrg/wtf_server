@@ -299,7 +299,9 @@ export class WtfService {
               prevStats.TotalLastAlive + (playerResult.LastAlive || 0),
             TotalTimePlayed: newTotalTimePlayed, // Correctly handled as text
             TotalMatchesQuitEarly:
-              prevStats.TotalMatchesQuitEarly + playerResult.QuitEarly,
+              (typeof prevStats.TotalMatchesQuitEarly === 'number'
+                ? prevStats.TotalMatchesQuitEarly
+                : 0) + playerResult.QuitEarly,
           },
           { onConflict: ['EpicID'] },
         );
@@ -506,6 +508,7 @@ export class WtfService {
           DamageTaken: Math.round(player.DamageTaken), // Round DamageTaken
           EpicID: epicID,
           XPEarned: matchXP,
+          QuitEarly: player.QuitEarly || 0,
         });
 
         // Collect weapon stats if present
