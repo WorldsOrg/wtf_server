@@ -21,6 +21,9 @@ export class BasePlayerStatsDto {
   LastAlive: number;
 
   @ApiProperty()
+  QuitEarly: number;
+
+  @ApiProperty()
   Score: number;
 
   @ApiProperty()
