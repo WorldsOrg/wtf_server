@@ -513,7 +513,9 @@ export class WtfService {
 
         // Collect weapon stats if present
         if (player.PlayerWeaponStats?.length > 0) {
-          const weaponInserts = player.PlayerWeaponStats.map((weapon) => ({
+          const weaponInserts = player.PlayerWeaponStats.filter(
+            (weapon) => weapon.WeaponName !== 'None',
+          ).map((weapon) => ({
             MatchID: matchID,
             EpicID: epicID,
             WeaponID: this.weaponNameToId.get(weapon.WeaponName) || null,
