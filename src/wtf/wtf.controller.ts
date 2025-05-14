@@ -9,6 +9,7 @@ import {
 import { WtfService } from '../wtf/wtf.service';
 import { AddMatchSummaryDto } from './dto/match.summary.dto';
 import { AddPlayerDto } from './dto/player.dto';
+import { PerformanceLogsDto } from './dto/performanceLogs.dto';
 import {
   ApiTags,
   ApiBody,
@@ -141,6 +142,20 @@ export class WtfController {
     if (epicID) return await this.WtfService.getPlayerStatsByEpicID(epicID);
     if (steamID) return await this.WtfService.getPlayerStatsBySteamID(steamID);
     if (ids) return await this.WtfService.getPlayerStats(ids);
+  }
+
+  @Post('/performanceLogs')
+  @ApiOperation({
+    summary: 'Add performance logs for a player',
+    description: 'Logs are stored in the database and can be queried later.',
+  })
+  @ApiBody({
+    type: PerformanceLogsDto,
+    description: 'Performance logs for a match',
+  })
+  async addPerformanceLogs(@Body() performanceLog: PerformanceLogsDto) {
+    console.log('performance logs called', performanceLog);
+    return await this.WtfService.addPerformaceLog(performanceLog);
   }
 
   @Get('/gameData')

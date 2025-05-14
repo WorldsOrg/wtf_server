@@ -13,6 +13,7 @@ import {
   MatchPlayerStatsInput,
   TotalPlayerStatsInput,
 } from './dto/player.statistics.dto';
+import { PerformanceLogsDto } from './dto/performanceLogs.dto';
 
 @Injectable()
 export class WtfService {
@@ -312,6 +313,21 @@ export class WtfService {
         `Error updating PlayerStatistics for ${playerResult.EpicID}:`,
         error,
       );
+    }
+  }
+
+  async addPerformaceLog(log: PerformanceLogsDto) {
+    try {
+      const { error } = await this.supabase
+        .from('wtf_logs')
+        .insert({ data_json: log.Logs });
+
+      if (error) throw error;
+
+      return { message: 'Log added successfully' };
+    } catch (error) {
+      console.error('Error adding performance log:', error);
+      return { message: error.message };
     }
   }
 
