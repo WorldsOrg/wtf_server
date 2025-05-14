@@ -144,18 +144,38 @@ export class WtfController {
     if (ids) return await this.WtfService.getPlayerStats(ids);
   }
 
-  @Post('/performanceLogs')
+  @Post('/clientPerformanceLogs')
   @ApiOperation({
-    summary: 'Add performance logs for a player',
+    summary: 'Add client performance logs',
     description: 'Logs are stored in the database and can be queried later.',
   })
   @ApiBody({
     type: PerformanceLogsDto,
     description: 'Performance logs for a match',
   })
-  async addPerformanceLogs(@Body() performanceLog: PerformanceLogsDto) {
+  async addClientPerformanceLogs(@Body() performanceLog: PerformanceLogsDto) {
     console.log('performance logs called', performanceLog);
-    return await this.WtfService.addPerformaceLog(performanceLog);
+    return await this.WtfService.addPerformaceLog(
+      performanceLog,
+      'wtf_client_logs',
+    );
+  }
+
+  @Post('/serverPerformanceLogs')
+  @ApiOperation({
+    summary: 'Add server performance logs',
+    description: 'Logs are stored in the database and can be queried later.',
+  })
+  @ApiBody({
+    type: PerformanceLogsDto,
+    description: 'Performance logs for a match',
+  })
+  async addServerPerformanceLogs(@Body() performanceLog: PerformanceLogsDto) {
+    console.log('performance logs called', performanceLog);
+    return await this.WtfService.addPerformaceLog(
+      performanceLog,
+      'wtf_server_logs',
+    );
   }
 
   @Get('/gameData')

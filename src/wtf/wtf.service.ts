@@ -316,17 +316,17 @@ export class WtfService {
     }
   }
 
-  async addPerformaceLog(log: PerformanceLogsDto) {
+  async addPerformaceLog(log: PerformanceLogsDto, tableName: string) {
     try {
       const { error } = await this.supabase
-        .from('wtf_logs')
+        .from(tableName)
         .insert({ data_json: log.Logs });
 
       if (error) throw error;
 
-      return { message: 'Log added successfully' };
+      return { message: `Log added successfully to ${tableName}` };
     } catch (error) {
-      console.error('Error adding performance log:', error);
+      console.error(`Error adding performance log to ${tableName}:`, error);
       return { message: error.message };
     }
   }
