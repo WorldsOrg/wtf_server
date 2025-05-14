@@ -9,7 +9,6 @@ import {
 import { WtfService } from '../wtf/wtf.service';
 import { AddMatchSummaryDto } from './dto/match.summary.dto';
 import { AddPlayerDto } from './dto/player.dto';
-import { PerformanceLogsDto } from './dto/performanceLogs.dto';
 import {
   ApiTags,
   ApiBody,
@@ -150,10 +149,10 @@ export class WtfController {
     description: 'Logs are stored in the database and can be queried later.',
   })
   @ApiBody({
-    type: PerformanceLogsDto,
+    type: Object,
     description: 'Performance logs for a match',
   })
-  async addClientPerformanceLogs(@Body() performanceLog: PerformanceLogsDto) {
+  async addClientPerformanceLogs(@Body() performanceLog: object) {
     console.log('performance logs called', performanceLog);
     return await this.WtfService.addPerformaceLog(
       performanceLog,
@@ -167,10 +166,10 @@ export class WtfController {
     description: 'Logs are stored in the database and can be queried later.',
   })
   @ApiBody({
-    type: PerformanceLogsDto,
+    type: Object,
     description: 'Performance logs for a match',
   })
-  async addServerPerformanceLogs(@Body() performanceLog: PerformanceLogsDto) {
+  async addServerPerformanceLogs(@Body() performanceLog: object) {
     console.log('performance logs called', performanceLog);
     return await this.WtfService.addPerformaceLog(
       performanceLog,

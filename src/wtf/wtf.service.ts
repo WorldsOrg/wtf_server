@@ -13,7 +13,6 @@ import {
   MatchPlayerStatsInput,
   TotalPlayerStatsInput,
 } from './dto/player.statistics.dto';
-import { PerformanceLogsDto } from './dto/performanceLogs.dto';
 
 @Injectable()
 export class WtfService {
@@ -316,11 +315,11 @@ export class WtfService {
     }
   }
 
-  async addPerformaceLog(log: PerformanceLogsDto, tableName: string) {
+  async addPerformaceLog(log: object, tableName: string) {
     try {
       const { error } = await this.supabase
         .from(tableName)
-        .insert({ data_json: log.Logs });
+        .insert({ data_json: log });
 
       if (error) throw error;
 
