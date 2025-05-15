@@ -13,6 +13,7 @@ import {
   MatchPlayerStatsInput,
   TotalPlayerStatsInput,
 } from './dto/player.statistics.dto';
+import { MatchMakingSummaryDto } from './dto/match.making.dto';
 
 @Injectable()
 export class WtfService {
@@ -474,6 +475,23 @@ export class WtfService {
     } catch (error) {
       console.error(`Error fetching player with ID ${steamID}:`, error);
       return { error: error.message };
+    }
+  }
+
+  async addMatchMakingSummary(addMatchMakingSummary: MatchMakingSummaryDto) {
+    try {
+      const { error } = await this.supabase
+        .from('MatchMakingSummary')
+        .insert([addMatchMakingSummary])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return { message: 'MatchMakingSummary added successfully' };
+    } catch (error) {
+      console.error('Error in addMatchMakingSummary:', error);
+      return { message: error.message };
     }
   }
 
