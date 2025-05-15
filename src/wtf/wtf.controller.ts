@@ -17,6 +17,7 @@ import {
   ApiExcludeEndpoint,
 } from '@nestjs/swagger';
 import * as util from 'util';
+import { MatchMakingSummaryDto } from './dto/match.making.dto';
 
 @ApiTags('wtf') // Swagger group name
 @Controller('wtf')
@@ -40,6 +41,30 @@ export class WtfController {
     );
     const res = await this.WtfService.addMatchSummary(addMatchSummaryDto);
     console.log('add match summary response', res);
+    return res;
+  }
+
+  @Post('/matchMakingSummary')
+  @ApiOperation({
+    summary: 'Add match making summary',
+    description:
+      'This is used to log the match making process. It is not used to update player stats.',
+  })
+  @ApiBody({
+    type: MatchMakingSummaryDto,
+    description: 'Add a new match making summary',
+  })
+  async addMatchMakingSummary(
+    @Body() addMatchMakingSummaryDto: MatchMakingSummaryDto,
+  ) {
+    console.log(
+      'add match making summary called',
+      util.inspect(addMatchMakingSummaryDto, { depth: null, colors: true }),
+    );
+    const res = await this.WtfService.addMatchMakingSummary(
+      addMatchMakingSummaryDto,
+    );
+    console.log('add match making summary response', res);
     return res;
   }
 
