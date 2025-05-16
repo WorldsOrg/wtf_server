@@ -78,6 +78,9 @@ export class MatchSummaryDto {
   GameMode: string;
 
   @ApiProperty()
+  PlayerCount: number;
+
+  @ApiProperty()
   MatchDuration: string;
 
   @ApiProperty()
