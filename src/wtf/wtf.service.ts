@@ -31,6 +31,7 @@ export class WtfService {
   private weaponsTable = 'WeaponStats';
   private weaponStatsTable = 'PlayerWeaponMatchStats';
   private unrealEditorEpicID = 'unrealeditor';
+  private schema = 'wtf_beta';
 
   constructor() {
     this.supabase = createClient(
@@ -50,6 +51,7 @@ export class WtfService {
   async loadWeaponStats() {
     try {
       const { data, error } = await this.supabase
+        .schema(this.schema)
         .from(this.weaponsTable)
         .select('id, Name');
 
@@ -70,6 +72,7 @@ export class WtfService {
   async loadDevSteamIds() {
     try {
       const { data, error } = await this.supabase
+        .schema(this.schema)
         .from(this.devSteamIdsTable)
         .select('SteamID');
 
@@ -88,6 +91,7 @@ export class WtfService {
   async loadLevelProgression() {
     try {
       const { data, error } = await this.supabase
+        .schema(this.schema)
         .from('LevelProgression')
         .select('XP, Level');
 
@@ -108,6 +112,7 @@ export class WtfService {
   async loadXPRewards() {
     try {
       const { data, error } = await this.supabase
+        .schema(this.schema)
         .from('XPRewards')
         .select()
         .single();
@@ -212,6 +217,7 @@ export class WtfService {
 
       // Fetch player's current statistics
       const { data: currentStats, error: fetchError } = await this.supabase
+        .schema(this.schema)
         .from('PlayerStatistics')
         .select(
           'TotalXP, TotalMatches, MatchesWon, MatchesLost, TotalKills, TotalAssists, TotalDeaths, TotalScore, TotalObjectives, TotalDamageDealt, TotalDamageTaken, TotalHeadshots, TotalShotsFired, TotalShotsHit, TotalRoundsWon, TotalRoundsLost, TotalFirstBloods, TotalLastAlive, TotalTimePlayed, TotalMatchesQuitEarly',
@@ -258,6 +264,7 @@ export class WtfService {
       const playerLevel = this.getLevelFromXP(totalXP);
 
       const { error } = await this.supabase
+        .schema(this.schema)
         .from(this.playerStatisticsTable)
         .upsert(
           {
@@ -319,6 +326,7 @@ export class WtfService {
   async addPerformaceLog(log: object, tableName: string) {
     try {
       const { error } = await this.supabase
+        .schema(this.schema)
         .from(tableName)
         .insert({ data_json: log });
 
@@ -352,7 +360,11 @@ export class WtfService {
         : false;
 
       // Look for existing player by EpicID or SteamID
-      let query = this.supabase.from(this.playerTable).select('*').limit(1);
+      let query = this.supabase
+        .schema(this.schema)
+        .from(this.playerTable)
+        .select('*')
+        .limit(1);
 
       if (normalizedEpicID && normalizedSteamID) {
         query = query.or(
@@ -380,6 +392,7 @@ export class WtfService {
         const existing = existingPlayers[0];
 
         const { error: updateError } = await this.supabase
+          .schema(this.schema)
           .from(this.playerTable)
           .update(updateData)
           .eq('PlayerID', existing.PlayerID);
@@ -387,16 +400,20 @@ export class WtfService {
         if (updateError) throw updateError;
 
         // 🕒 Insert login history
-        await this.supabase.from(this.loginHistoryTable).insert({
-          PlayerID: existing.PlayerID,
-          GameVersion: addPlayerDto.GameVersion,
-        });
+        await this.supabase
+          .schema(this.schema)
+          .from(this.loginHistoryTable)
+          .insert({
+            PlayerID: existing.PlayerID,
+            GameVersion: addPlayerDto.GameVersion,
+          });
 
         // 🎯 Insert PlayerStatistics if this is the first time EpicID is being set
         const hadNoEpicIDBefore = !existing.EpicID && normalizedEpicID;
 
         if (hadNoEpicIDBefore) {
           const { error: statsInsertError } = await this.supabase
+            .schema(this.schema)
             .from(this.playerStatisticsTable)
             .insert({
               PlayerID: existing.PlayerID,
@@ -410,6 +427,7 @@ export class WtfService {
       } else {
         // 🆕 New player → Insert
         const insertResponse = await this.supabase
+          .schema(this.schema)
           .from(this.playerTable)
           .insert(updateData)
           .select('PlayerID, EpicID')
@@ -420,14 +438,18 @@ export class WtfService {
         const newPlayerID = insertResponse.data.PlayerID;
 
         // 🕒 Insert login history
-        await this.supabase.from(this.loginHistoryTable).insert({
-          PlayerID: newPlayerID,
-          GameVersion: addPlayerDto.GameVersion,
-        });
+        await this.supabase
+          .schema(this.schema)
+          .from(this.loginHistoryTable)
+          .insert({
+            PlayerID: newPlayerID,
+            GameVersion: addPlayerDto.GameVersion,
+          });
 
         // 🎯 If EpicID is present on new player, insert PlayerStatistics
         if (normalizedEpicID) {
           const { error: statsInsertError } = await this.supabase
+            .schema(this.schema)
             .from(this.playerStatisticsTable)
             .insert({
               PlayerID: newPlayerID,
@@ -447,6 +469,7 @@ export class WtfService {
   async getPlayerEpic(epicID: string) {
     try {
       const { data, error } = await this.supabase
+        .schema(this.schema)
         .from(this.playerTable)
         .select('*')
         .eq('EpicID', epicID)
@@ -464,6 +487,7 @@ export class WtfService {
   async getPlayerSteam(steamID: string) {
     try {
       const { data, error } = await this.supabase
+        .schema(this.schema)
         .from(this.playerTable)
         .select('*')
         .eq('SteamID', steamID)
@@ -481,6 +505,7 @@ export class WtfService {
   async addMatchMakingSummary(addMatchMakingSummary: MatchMakingSummaryDto) {
     try {
       const { error } = await this.supabase
+        .schema(this.schema)
         .from('MatchMakingSummary')
         .insert([addMatchMakingSummary])
         .select()
@@ -499,6 +524,7 @@ export class WtfService {
     try {
       // 1. Insert match summary
       const { data: matchData, error: matchError } = await this.supabase
+        .schema(this.schema)
         .from(this.matchSummaryTable)
         .insert([addMatchSummaryDto.MatchSummary])
         .select()
@@ -517,6 +543,7 @@ export class WtfService {
         const epicID =
           player.EpicID == '' || null ? this.unrealEditorEpicID : player.EpicID;
         const { data: playerRow, error: lookupError } = await this.supabase
+          .schema(this.schema)
           .from(this.playerTable)
           .select('PlayerID')
           .eq('EpicID', epicID)
@@ -589,6 +616,7 @@ export class WtfService {
         resolvedResults.map(({ PlayerWeaponStats, PlayerID, ...rest }) => rest);
 
       const { error: playerResultsError } = await this.supabase
+        .schema(this.schema)
         .from(this.playerResultsTable)
         .insert(matchSummaryInserts)
         .select('MatchID, EpicID'); // Enforces read-after-write visibility
@@ -602,6 +630,7 @@ export class WtfService {
       // 4. Insert PlayerWeaponMatchStats entries (if any)
       if (weaponStatsInserts.length > 0) {
         const { error: weaponStatsError } = await this.supabase
+          .schema(this.schema)
           .from(this.weaponStatsTable)
           .insert(weaponStatsInserts);
 
@@ -627,6 +656,7 @@ export class WtfService {
       // Optional rollback if match insert succeeded
       if (addMatchSummaryDto.MatchSummary?.MatchID) {
         await this.supabase
+          .schema(this.schema)
           .from(this.matchSummaryTable)
           .delete()
           .eq('MatchID', addMatchSummaryDto.MatchSummary.MatchID);
@@ -645,8 +675,8 @@ export class WtfService {
         { data: movementStatsData, error: movementError },
         { data: remoteConfigData, error: remoteError },
       ] = await Promise.all([
-        this.supabase.from('LevelProgression').select('*'),
-        this.supabase.from('WeaponStats').select(`
+        this.supabase.schema(this.schema).from('LevelProgression').select('*'),
+        this.supabase.schema(this.schema).from('WeaponStats').select(`
           "Name",
           "MovementSpeed",
           "ADSSpeed",
@@ -663,9 +693,10 @@ export class WtfService {
           "FireRate",
           "MaximumRange"
         `),
-        this.supabase.from('XPRewards').select('*').single(),
-        this.supabase.from('MovementStats').select('*'),
+        this.supabase.schema('wtf_beta').from('XPRewards').select('*').single(),
+        this.supabase.schema('wtf_beta').from('MovementStats').select('*'),
         this.supabase
+          .schema('wtf_beta')
           .from('RemoteConfig')
           .select('id, note')
           .eq('isActive', true)
@@ -722,6 +753,7 @@ export class WtfService {
   async getPlayerStatsBySteamID(steamID: string) {
     try {
       const { data: player, error: playerError } = await this.supabase
+        .schema('wtf_beta')
         .from(this.playerTable)
         .select('PlayerID')
         .eq('SteamID', steamID)
@@ -731,6 +763,7 @@ export class WtfService {
         throw new Error('Player not found with this SteamID');
 
       const { data: stats, error: statsError } = await this.supabase
+        .schema('wtf_beta')
         .from(this.playerStatisticsTable)
         .select('*')
         .eq('PlayerID', player.PlayerID)
@@ -748,6 +781,7 @@ export class WtfService {
   async getPlayerStatsByEpicID(epicID: string) {
     try {
       const { data: stats, error: statsError } = await this.supabase
+        .schema('wtf_beta')
         .from(this.playerStatisticsTable)
         .select('*')
         .eq('EpicID', epicID)
@@ -772,6 +806,7 @@ export class WtfService {
       const playerIDs = ids.split(',').map((id) => id.trim());
 
       const { data, error } = await this.supabase
+        .schema('wtf_beta')
         .from(this.playerStatisticsTable)
         .select('*')
         .in('EpicID', playerIDs);
@@ -800,6 +835,7 @@ export class WtfService {
 
       // Fetch all players' XP and current levels
       const { data: players, error: fetchError } = await this.supabase
+        .schema('wtf_beta')
         .from(this.playerStatisticsTable)
         .select('EpicID, PlayerID, TotalXP');
 
@@ -818,6 +854,7 @@ export class WtfService {
 
       // Perform bulk update
       const { error: updateError } = await this.supabase
+        .schema('wtf_beta')
         .from(this.playerStatisticsTable)
         .upsert(updates, { onConflict: ['EpicID', 'PlayerID'] });
 
@@ -836,6 +873,7 @@ export class WtfService {
 
       // Fetch all players' match-related statistics
       const { data: players, error: fetchError } = await this.supabase
+        .schema('wtf_beta')
         .from(this.playerStatisticsTable)
         .select(
           'EpicID, PlayerID, TotalKills, TotalAssists, TotalFirstBloods, TotalLastAlive, TotalRoundsWon, TotalMatches, MatchesWon, TotalXP',
@@ -861,6 +899,7 @@ export class WtfService {
 
       // Perform bulk update
       const { error: updateError } = await this.supabase
+        .schema('wtf_beta')
         .from(this.playerStatisticsTable)
         .upsert(updates, { onConflict: ['EpicID', 'PlayerID'] });
 
@@ -885,6 +924,7 @@ export class WtfService {
       }
 
       const { error } = await this.supabase
+        .schema('wtf_beta')
         .from('WtfPlayers')
         .update({ Type: 'dev' })
         .in('SteamID', Array.from(this.devSteamIds));
