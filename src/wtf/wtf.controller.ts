@@ -5,6 +5,7 @@ import {
   Get,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { WtfService } from '../wtf/wtf.service';
 import { AddMatchSummaryDto } from './dto/match.summary.dto';
@@ -18,9 +19,11 @@ import {
 } from '@nestjs/swagger';
 import * as util from 'util';
 import { MatchMakingSummaryDto } from './dto/match.making.dto';
+import { SteamGuard } from 'src/steam/steam.guard';
 
 @ApiTags('wtf') // Swagger group name
 @Controller('wtf')
+@UseGuards(SteamGuard)
 export class WtfController {
   constructor(private readonly WtfService: WtfService) {}
 
