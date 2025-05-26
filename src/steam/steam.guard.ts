@@ -43,11 +43,13 @@ export class SteamGuard implements CanActivate {
           response: { error, params },
         },
       } = await firstValueFrom(authRequest);
+
       if (!params || params.result !== 'OK' || error) return null;
       if (params.vacbanned || params.publisherbanned) return null;
 
       return { steamId: params.steamid };
     } catch (e) {
+      console.error(e);
       return null;
     }
   }

@@ -7,7 +7,7 @@ import { SteamGuard } from './steam.guard';
 @Module({
   providers: [SteamGuard],
   controllers: [],
-  exports: [SteamGuard],
+  exports: [SteamGuard, HttpModule],
   imports: [
     HttpModule.registerAsync({
       imports: [ConfigModule],
