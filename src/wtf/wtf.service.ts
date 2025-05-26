@@ -703,21 +703,21 @@ export class WtfService {
           .single(),
       ]);
 
-      if (
-        levelError ||
-        weaponError ||
-        xpError ||
-        movementError ||
-        remoteError
-      ) {
+      if (levelError || weaponError || xpError || movementError) {
         throw new Error(
           `Error fetching data: ${
             levelError?.message ||
             weaponError?.message ||
             xpError?.message ||
-            movementError?.message ||
-            remoteError?.message
+            movementError?.message
           }`,
+        );
+      }
+
+      if (remoteError) {
+        console.error(
+          'Error retrieving remote config information: ',
+          remoteError,
         );
       }
 
