@@ -4,6 +4,7 @@ import { WtfController } from './wtf.controller';
 
 @Global()
 @Module({
+  imports: [],
   providers: [WtfService],
   controllers: [WtfController],
   exports: [WtfService],

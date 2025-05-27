@@ -28,6 +28,7 @@
     "@nestjs/schedule": "^4.1.1",
     "@nestjs/swagger": "^11.0.7",
     "@supabase/supabase-js": "^2.47.16",
+    "axios": "^1.6.0",
     "reflect-metadata": "^0.2.2",
     "swagger-ui-express": "^5.0.1"
   },
