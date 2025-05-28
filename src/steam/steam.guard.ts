@@ -27,7 +27,10 @@ export class SteamGuard implements CanActivate {
   }
 
   async validateSteamUser(ticket: string): Promise<{ steamId: string } | null> {
-    if (ticket == 'editor') {
+    if (
+      process.env.RAILWAY_ENVIRONMENT_NAME == 'staging' &&
+      ticket == 'editor'
+    ) {
       return { steamId: '1' };
     }
     const authRequest = this.httpService.get<SteamAuthResponse>(
