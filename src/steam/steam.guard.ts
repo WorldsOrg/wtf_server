@@ -54,7 +54,8 @@ export class SteamGuard implements CanActivate {
 
       return { steamId: params.steamid };
     } catch (e) {
-      console.error(e);
+      console.error(e.response.data);
+      console.error(e.response.status);
       return null;
     }
   }
