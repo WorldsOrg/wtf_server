@@ -38,7 +38,6 @@ export class SteamGuard implements CanActivate {
       {
         params: {
           ticket,
-          identity: 'worldsbase-api',
         },
       },
     );
