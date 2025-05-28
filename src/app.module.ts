@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { WtfModule } from './wtf/wtf.module';
+import { SteamModule } from './steam/steam.module';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { WtfModule } from './wtf/wtf.module';
       isGlobal: true, // Makes the ConfigModule available globally
     }),
     WtfModule,
+    SteamModule,
   ],
   controllers: [AppController],
   providers: [AppService],
