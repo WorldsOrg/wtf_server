@@ -236,4 +236,10 @@ export class WtfController {
   async updateDevPlayers() {
     return await this.WtfService.updateDevPlayers();
   }
+
+  @Post('/weapons')
+  @ApiExcludeEndpoint()
+  async updateWeapons() {
+    return await this.WtfService.loadWeaponStats();
+  }
 }
