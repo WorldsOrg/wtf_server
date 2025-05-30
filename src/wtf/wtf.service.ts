@@ -522,11 +522,19 @@ export class WtfService {
 
   async addMatchSummary(addMatchSummaryDto: AddMatchSummaryDto) {
     try {
+      const baseMatchID = addMatchSummaryDto.MatchSummary.MatchID;
+      const startTimestamp = addMatchSummaryDto.MatchSummary.StartTimestamp;
+      const compositeMatchID = `${baseMatchID}_${startTimestamp}`;
+      const matchSummaryWithCompositeID = {
+        ...addMatchSummaryDto.MatchSummary,
+        MatchID: compositeMatchID,
+      };
+
       // 1. Insert match summary
-      const { data: matchData, error: matchError } = await this.supabase
+      const { error: matchError } = await this.supabase
         .schema(this.schema)
         .from(this.matchSummaryTable)
-        .insert([addMatchSummaryDto.MatchSummary])
+        .insert([matchSummaryWithCompositeID])
         .select()
         .single();
 
@@ -534,7 +542,7 @@ export class WtfService {
         throw new Error(`Match summary insert failed: ${matchError.message}`);
       }
 
-      const matchID = matchData.MatchID;
+      const matchID = compositeMatchID;
       const resolvedResults: ResolvedPlayerDto[] = [];
       const weaponStatsInserts: PlayerWeaponMatchStatsInsert[] = [];
 
