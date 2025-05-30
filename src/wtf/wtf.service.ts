@@ -45,6 +45,21 @@ export class WtfService {
     this.loadDevSteamIds(); // Load dev Steam IDs on startup
   }
 
+  async token() {
+    try {
+      const { data, error } = await this.supabase
+        .schema(this.schema)
+        .from('Tokens')
+        .select('token');
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching token:', error);
+    }
+  }
+
   /**
    * Load Weapon Stats and map Name to ID
    */
@@ -479,7 +494,7 @@ export class WtfService {
 
       return data;
     } catch (error) {
-      console.error(`Error fetching player with ID ${epicID}:`, error);
+      console.error(`Error fetching player with EpicID ${epicID}:`, error);
       return { error: error.message };
     }
   }
@@ -497,7 +512,7 @@ export class WtfService {
 
       return data;
     } catch (error) {
-      console.error(`Error fetching player with ID ${steamID}:`, error);
+      console.error(`Error fetching player with SteamID ${steamID}:`, error);
       return { error: error.message };
     }
   }
@@ -522,19 +537,11 @@ export class WtfService {
 
   async addMatchSummary(addMatchSummaryDto: AddMatchSummaryDto) {
     try {
-      const baseMatchID = addMatchSummaryDto.MatchSummary.MatchID;
-      const startTimestamp = addMatchSummaryDto.MatchSummary.StartTimestamp;
-      const compositeMatchID = `${baseMatchID}_${startTimestamp}`;
-      const matchSummaryWithCompositeID = {
-        ...addMatchSummaryDto.MatchSummary,
-        MatchID: compositeMatchID,
-      };
-
       // 1. Insert match summary
       const { error: matchError } = await this.supabase
         .schema(this.schema)
         .from(this.matchSummaryTable)
-        .insert([matchSummaryWithCompositeID])
+        .insert([addMatchSummaryDto.MatchSummary])
         .select()
         .single();
 
@@ -542,7 +549,7 @@ export class WtfService {
         throw new Error(`Match summary insert failed: ${matchError.message}`);
       }
 
-      const matchID = compositeMatchID;
+      const matchID = addMatchSummaryDto.MatchSummary.MatchID;
       const resolvedResults: ResolvedPlayerDto[] = [];
       const weaponStatsInserts: PlayerWeaponMatchStatsInsert[] = [];
 
