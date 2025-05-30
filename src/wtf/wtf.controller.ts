@@ -219,6 +219,14 @@ export class WtfController {
     return await this.WtfService.getGameData();
   }
 
+  @Get('/token')
+  @ApiOperation({
+    summary: 'Get token',
+  })
+  async getToken() {
+    return await this.WtfService.token();
+  }
+
   @Post('/levelProgression')
   @ApiExcludeEndpoint()
   async updateLevelProgression() {

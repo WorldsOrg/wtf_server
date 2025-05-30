@@ -45,6 +45,21 @@ export class WtfService {
     this.loadDevSteamIds(); // Load dev Steam IDs on startup
   }
 
+  async token() {
+    try {
+      const { data, error } = await this.supabase
+        .schema(this.schema)
+        .from('Tokens')
+        .select('token');
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching token:', error);
+    }
+  }
+
   /**
    * Load Weapon Stats and map Name to ID
    */
@@ -479,7 +494,7 @@ export class WtfService {
 
       return data;
     } catch (error) {
-      console.error(`Error fetching player with ID ${epicID}:`, error);
+      console.error(`Error fetching player with EpicID ${epicID}:`, error);
       return { error: error.message };
     }
   }
@@ -497,7 +512,7 @@ export class WtfService {
 
       return data;
     } catch (error) {
-      console.error(`Error fetching player with ID ${steamID}:`, error);
+      console.error(`Error fetching player with SteamID ${steamID}:`, error);
       return { error: error.message };
     }
   }
