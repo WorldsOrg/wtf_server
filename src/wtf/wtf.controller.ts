@@ -18,8 +18,8 @@ import {
   ApiExcludeEndpoint,
   ApiHeader,
 } from '@nestjs/swagger';
-import * as util from 'util';
 import { MatchMakingSummaryDto } from './dto/match.making.dto';
+import { LoggerService } from 'src/logger/logger.service';
 import { SteamGuard } from 'src/steam/steam.guard';
 
 @ApiTags('wtf') // Swagger group name
@@ -31,7 +31,10 @@ import { SteamGuard } from 'src/steam/steam.guard';
 })
 @UseGuards(SteamGuard)
 export class WtfController {
-  constructor(private readonly WtfService: WtfService) {}
+  constructor(
+    private readonly WtfService: WtfService,
+    private readonly logger: LoggerService,
+  ) {}
 
   @Post('/matchSummary')
   @ApiOperation({
@@ -44,12 +47,9 @@ export class WtfController {
     description: 'Add a new match summary with player results',
   })
   async addMatchSummary(@Body() addMatchSummaryDto: AddMatchSummaryDto) {
-    console.log(
-      'add match summary called',
-      util.inspect(addMatchSummaryDto, { depth: null, colors: true }),
-    );
+    this.logger.log('addMatchSummary called', addMatchSummaryDto, 'Match');
     const res = await this.WtfService.addMatchSummary(addMatchSummaryDto);
-    console.log('add match summary response', res);
+    this.logger.log('addMatchSummary response', res, 'Match');
     return res;
   }
 
@@ -66,14 +66,17 @@ export class WtfController {
   async addMatchMakingSummary(
     @Body() addMatchMakingSummaryDto: MatchMakingSummaryDto,
   ) {
-    console.log(
-      'add match making summary called',
-      util.inspect(addMatchMakingSummaryDto, { depth: null, colors: true }),
+    this.logger.log(
+      'addMatchMakingSummary called',
+      addMatchMakingSummaryDto,
+      'MatchMaking',
     );
+
     const res = await this.WtfService.addMatchMakingSummary(
       addMatchMakingSummaryDto,
     );
-    console.log('add match making summary response', res);
+
+    this.logger.log('addMatchMakingSummary response', res, 'MatchMaking');
     return res;
   }
 
@@ -89,8 +92,13 @@ export class WtfController {
     description: 'Add or update a player by SteamID or EpicID',
   })
   async addPlayer(@Body() addPlayerDto: AddPlayerDto) {
-    console.log('add player called', addPlayerDto);
-    return await this.WtfService.addPlayer(addPlayerDto);
+    this.logger.log('addPlayer called', addPlayerDto, 'Player');
+
+    const result = await this.WtfService.addPlayer(addPlayerDto);
+
+    this.logger.log('addPlayer response', result, 'Player');
+
+    return result;
   }
 
   @Get('/player')
@@ -115,15 +123,32 @@ export class WtfController {
     @Query('epicID') epicID?: string,
     @Query('steamID') steamID?: string,
   ) {
+    this.logger.log('getPlayer called', { epicID, steamID }, 'Player');
+
     if (epicID && steamID) {
+      this.logger.warn(
+        'Both epicID and steamID were provided',
+        { epicID, steamID },
+        'Player',
+      );
       throw new BadRequestException(
         'Only one of epicID or steamID can be provided.',
       );
     }
 
-    if (epicID) return await this.WtfService.getPlayerEpic(epicID);
-    if (steamID) return await this.WtfService.getPlayerSteam(steamID);
+    if (epicID) {
+      const result = await this.WtfService.getPlayerEpic(epicID);
+      this.logger.log('getPlayer response (epicID)', result, 'Player');
+      return result;
+    }
 
+    if (steamID) {
+      const result = await this.WtfService.getPlayerSteam(steamID);
+      this.logger.log('getPlayer response (steamID)', result, 'Player');
+      return result;
+    }
+
+    this.logger.warn('Neither epicID nor steamID provided', {}, 'Player');
     throw new BadRequestException('You must provide either epicID or steamID.');
   }
 
@@ -158,23 +183,46 @@ export class WtfController {
     @Query('steamID') steamID?: string,
     @Query('ids') ids?: string,
   ) {
+    this.logger.log(
+      'getPlayerStats query received',
+      { epicID, steamID, ids },
+      'Stats',
+    );
+
     const provided = [epicID, steamID, ids].filter(Boolean);
 
     if (provided.length === 0) {
-      throw new BadRequestException(
-        'You must provide one of epicID, steamID, or ids.',
-      );
+      const msg = 'You must provide one of epicID, steamID, or ids.';
+      this.logger.warn(msg, {}, 'Stats');
+      throw new BadRequestException(msg);
     }
 
     if (provided.length > 1) {
-      throw new BadRequestException(
-        'Only one of epicID, steamID, or ids can be provided.',
-      );
+      const msg = 'Only one of epicID, steamID, or ids can be provided.';
+      this.logger.warn(msg, { epicID, steamID, ids }, 'Stats');
+      throw new BadRequestException(msg);
     }
 
-    if (epicID) return await this.WtfService.getPlayerStatsByEpicID(epicID);
-    if (steamID) return await this.WtfService.getPlayerStatsBySteamID(steamID);
-    if (ids) return await this.WtfService.getPlayerStats(ids);
+    if (epicID) {
+      this.logger.log('Fetching stats by EpicID', epicID, 'Stats');
+      const res = await this.WtfService.getPlayerStatsByEpicID(epicID);
+      this.logger.log('getPlayerStats response', res, 'Stats');
+      return res;
+    }
+
+    if (steamID) {
+      this.logger.log('Fetching stats by SteamID', steamID, 'Stats');
+      const res = await this.WtfService.getPlayerStatsBySteamID(steamID);
+      this.logger.log('getPlayerStats response', res, 'Stats');
+      return res;
+    }
+
+    if (ids) {
+      this.logger.log('Fetching stats for multiple EpicIDs', ids, 'Stats');
+      const res = await this.WtfService.getPlayerStats(ids);
+      this.logger.log('getPlayerStats response', res, 'Stats');
+      return res;
+    }
   }
 
   @Post('/clientPerformanceLogs')
@@ -187,11 +235,20 @@ export class WtfController {
     description: 'Performance logs for a match',
   })
   async addClientPerformanceLogs(@Body() performanceLog: object) {
-    console.log('performance logs called', performanceLog);
-    return await this.WtfService.addPerformaceLog(
+    this.logger.log(
+      'Client performance log received',
+      performanceLog,
+      'Performance',
+    );
+
+    const result = await this.WtfService.addPerformaceLog(
       performanceLog,
       'wtf_client_logs',
     );
+
+    this.logger.log('Client performance log saved', result, 'Performance');
+
+    return result;
   }
 
   @Post('/serverPerformanceLogs')
@@ -204,11 +261,20 @@ export class WtfController {
     description: 'Performance logs for a match',
   })
   async addServerPerformanceLogs(@Body() performanceLog: object) {
-    console.log('performance logs called', performanceLog);
-    return await this.WtfService.addPerformaceLog(
+    this.logger.log(
+      'Server performance log received',
+      performanceLog,
+      'Performance',
+    );
+
+    const result = await this.WtfService.addPerformaceLog(
       performanceLog,
       'wtf_server_logs',
     );
+
+    this.logger.log('Server performance log saved', result, 'Performance');
+
+    return result;
   }
 
   @Get('/gameData')

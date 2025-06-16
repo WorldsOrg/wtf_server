@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { WtfModule } from './wtf/wtf.module';
 import { SteamModule } from './steam/steam.module';
+import { LoggerModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { SteamModule } from './steam/steam.module';
     }),
     WtfModule,
     SteamModule,
+    LoggerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
