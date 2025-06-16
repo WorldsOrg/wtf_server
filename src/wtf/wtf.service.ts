@@ -357,24 +357,20 @@ export class WtfService {
   async addPlayer(addPlayerDto: AddPlayerDto) {
     const currentTimestamp = new Date().toISOString();
 
-    // Normalize empty string values
     const normalizedEpicID =
       addPlayerDto.EpicID?.trim() === '' ? null : addPlayerDto.EpicID;
     const normalizedSteamID =
       addPlayerDto.SteamID?.trim() === '' ? null : addPlayerDto.SteamID;
 
-    // ❌ Require at least one ID
     if (!normalizedEpicID && !normalizedSteamID) {
       throw new Error('You must provide either SteamID or EpicID.');
     }
 
     try {
-      // 🔍 Check if SteamID is in DevSteamIds
       const isDev = normalizedSteamID
         ? this.devSteamIds.has(normalizedSteamID)
         : false;
 
-      // Look for existing player by EpicID or SteamID
       let query = this.supabase
         .schema(this.schema)
         .from(this.playerTable)
@@ -403,7 +399,6 @@ export class WtfService {
       };
 
       if (existingPlayers.length > 0) {
-        // 🔄 Player exists → Update
         const existing = existingPlayers[0];
 
         const { error: updateError } = await this.supabase
@@ -414,7 +409,6 @@ export class WtfService {
 
         if (updateError) throw updateError;
 
-        // 🕒 Insert login history
         await this.supabase
           .schema(this.schema)
           .from(this.loginHistoryTable)
@@ -423,7 +417,6 @@ export class WtfService {
             GameVersion: addPlayerDto.GameVersion,
           });
 
-        // 🎯 Insert PlayerStatistics if this is the first time EpicID is being set
         const hadNoEpicIDBefore = !existing.EpicID && normalizedEpicID;
 
         if (hadNoEpicIDBefore) {
@@ -438,21 +431,28 @@ export class WtfService {
           if (statsInsertError) throw statsInsertError;
         }
 
-        return { message: 'Player updated and login recorded' };
+        return {
+          EpicID: normalizedEpicID,
+          Username: existing.Username || '',
+          Region: existing.Region || '',
+          GameVersion: addPlayerDto.GameVersion,
+          LoginTimestamp: currentTimestamp,
+          SteamID: normalizedSteamID,
+          Type: isDev ? 'dev' : existing.Type || null,
+          PlayerID: existing.PlayerID,
+        };
       } else {
-        // 🆕 New player → Insert
         const insertResponse = await this.supabase
           .schema(this.schema)
           .from(this.playerTable)
           .insert(updateData)
-          .select('PlayerID, EpicID')
+          .select('PlayerID, Username, Region')
           .single();
 
         if (insertResponse.error) throw insertResponse.error;
 
         const newPlayerID = insertResponse.data.PlayerID;
 
-        // 🕒 Insert login history
         await this.supabase
           .schema(this.schema)
           .from(this.loginHistoryTable)
@@ -461,7 +461,6 @@ export class WtfService {
             GameVersion: addPlayerDto.GameVersion,
           });
 
-        // 🎯 If EpicID is present on new player, insert PlayerStatistics
         if (normalizedEpicID) {
           const { error: statsInsertError } = await this.supabase
             .schema(this.schema)
@@ -474,7 +473,16 @@ export class WtfService {
           if (statsInsertError) throw statsInsertError;
         }
 
-        return { message: 'New player created and login recorded' };
+        return {
+          EpicID: normalizedEpicID,
+          Username: insertResponse.data.Username || '',
+          Region: insertResponse.data.Region || '',
+          GameVersion: addPlayerDto.GameVersion,
+          LoginTimestamp: currentTimestamp,
+          SteamID: normalizedSteamID,
+          Type: isDev ? 'dev' : null,
+          PlayerID: newPlayerID,
+        };
       }
     } catch (error) {
       return { message: error.message || 'An error occurred' };
