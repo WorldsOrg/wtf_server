@@ -544,6 +544,7 @@ export class WtfService {
   }
 
   async addMatchSummary(addMatchSummaryDto: AddMatchSummaryDto) {
+    let matchInserted = false;
     try {
       // 1. Insert match summary
       const { error: matchError } = await this.supabase
@@ -556,6 +557,8 @@ export class WtfService {
       if (matchError) {
         throw new Error(`Match summary insert failed: ${matchError.message}`);
       }
+
+      matchInserted = true;
 
       const matchID = addMatchSummaryDto.MatchSummary.MatchID;
       const resolvedResults: ResolvedPlayerDto[] = [];
@@ -676,8 +679,8 @@ export class WtfService {
     } catch (error) {
       console.error('Error in addMatchSummary:', error);
 
-      // Optional rollback if match insert succeeded
-      if (addMatchSummaryDto.MatchSummary?.MatchID) {
+      // Rollback if there is an error for data associated with matchSummary
+      if (matchInserted && addMatchSummaryDto.MatchSummary?.MatchID) {
         await this.supabase
           .schema(this.schema)
           .from(this.matchSummaryTable)
