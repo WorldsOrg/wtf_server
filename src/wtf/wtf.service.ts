@@ -14,6 +14,7 @@ import {
   TotalPlayerStatsInput,
 } from './dto/player.statistics.dto';
 import { MatchMakingSummaryDto } from './dto/match.making.dto';
+import { MatchTelemetryDto } from './dto/match.telemetry.dto';
 
 @Injectable()
 export class WtfService {
@@ -30,6 +31,8 @@ export class WtfService {
   private devSteamIdsTable = 'DevSteamIds';
   private weaponsTable = 'WeaponStats';
   private weaponStatsTable = 'PlayerWeaponMatchStats';
+  private matchMakingSummaryTable = 'MatchMakingSummary';
+  private matchTelemetryTable = 'MatchTelemetry';
   private unrealEditorEpicID = 'unrealeditor';
   private schema = 'wtf_beta';
 
@@ -525,11 +528,29 @@ export class WtfService {
     }
   }
 
+  async addMatchTelemetry(addMatchTelemetryData: MatchTelemetryDto) {
+    try {
+      const { error } = await this.supabase
+        .schema(this.schema)
+        .from(this.matchTelemetryTable)
+        .insert([addMatchTelemetryData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return { message: 'Match telemetry data added successfully' };
+    } catch (error) {
+      console.error('Error in addMatchTelemetry:', error);
+      return { message: error.message };
+    }
+  }
+
   async addMatchMakingSummary(addMatchMakingSummary: MatchMakingSummaryDto) {
     try {
       const { error } = await this.supabase
         .schema(this.schema)
-        .from('MatchMakingSummary')
+        .from(this.matchMakingSummaryTable)
         .insert([addMatchMakingSummary])
         .select()
         .single();

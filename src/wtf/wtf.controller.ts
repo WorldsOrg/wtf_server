@@ -21,6 +21,7 @@ import {
 import { MatchMakingSummaryDto } from './dto/match.making.dto';
 import { LoggerService } from 'src/logger/logger.service';
 import { SteamGuard } from 'src/steam/steam.guard';
+import { MatchTelemetryDto } from './dto/match.telemetry.dto';
 
 @ApiTags('wtf') // Swagger group name
 @Controller('wtf')
@@ -77,6 +78,28 @@ export class WtfController {
     );
 
     this.logger.log('addMatchMakingSummary response', res, 'MatchMaking');
+    return res;
+  }
+
+  @Post('/matchTelemetry')
+  @ApiOperation({
+    summary: 'Add match telemetry data',
+    description: 'This is used to log match telemetry.',
+  })
+  @ApiBody({
+    type: MatchTelemetryDto,
+    description: 'Add a new match match telemetry summary',
+  })
+  async addMatchTelemetry(@Body() addMatchTelemetry: MatchTelemetryDto) {
+    this.logger.log(
+      'matchTelemetry called',
+      addMatchTelemetry,
+      'MatchTelemetry',
+    );
+
+    const res = await this.WtfService.addMatchTelemetry(addMatchTelemetry);
+
+    this.logger.log('matchTelemetry response', res, 'MatchTelemetry');
     return res;
   }
 
