@@ -533,7 +533,10 @@ export class WtfService {
       const { error } = await this.supabase
         .schema(this.schema)
         .from(this.matchTelemetryTable)
-        .insert([addMatchTelemetryData])
+        .insert({
+          MatchID: addMatchTelemetryData.MatchId,
+          TelemetryEvents: addMatchTelemetryData.TelemetryEvents,
+        })
         .select()
         .single();
 

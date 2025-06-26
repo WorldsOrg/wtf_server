@@ -2,8 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class MatchTelemetryDto {
   @ApiProperty()
-  MatchID: string;
+  MatchId: string;
 
   @ApiProperty()
-  data_json: object;
+  TelemetryEvents: object;
 }
