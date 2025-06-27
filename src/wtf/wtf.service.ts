@@ -488,6 +488,8 @@ export class WtfService {
         };
       }
     } catch (error) {
+      console.error('Error during addPlayer: ', error);
+      console.error('add player request body: \n', addPlayerDto);
       return { message: error.message || 'An error occurred' };
     }
   }
@@ -545,6 +547,10 @@ export class WtfService {
       return { message: 'Match telemetry data added successfully' };
     } catch (error) {
       console.error('Error in addMatchTelemetry:', error);
+      console.error(
+        'add match telemetry request body: \n',
+        addMatchTelemetryData,
+      );
       return { message: error.message };
     }
   }
@@ -563,6 +569,10 @@ export class WtfService {
       return { message: 'MatchMakingSummary added successfully' };
     } catch (error) {
       console.error('Error in addMatchMakingSummary:', error);
+      console.error(
+        'match making summary request body: /n',
+        addMatchMakingSummary,
+      );
       return { message: error.message };
     }
   }
@@ -702,6 +712,7 @@ export class WtfService {
       };
     } catch (error) {
       console.error('Error in addMatchSummary:', error);
+      console.error('add match summary request body: \n', addMatchSummaryDto);
 
       // Rollback if there is an error for data associated with matchSummary
       if (matchInserted && addMatchSummaryDto.MatchSummary?.MatchID) {

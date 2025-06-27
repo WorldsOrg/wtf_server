@@ -52,7 +52,7 @@ export class WtfController {
     const res = await this.WtfService.addMatchSummary(addMatchSummaryDto);
     const duration = Date.now() - start;
 
-    this.logger.log('addMatchSummary', {
+    this.logger.log('POST /matchSummary', {
       durationMs: duration,
     });
     return res;
@@ -79,7 +79,7 @@ export class WtfController {
 
     const duration = Date.now() - start;
 
-    this.logger.log('matchMakingSummary', {
+    this.logger.log('POST /matchMakingSummary', {
       durationMs: duration,
     });
     return res;
@@ -99,7 +99,7 @@ export class WtfController {
     const res = await this.WtfService.addMatchTelemetry(addMatchTelemetry);
     const duration = Date.now() - start;
 
-    this.logger.log('matchTelemetry', {
+    this.logger.log('POST /matchTelemetry', {
       durationMs: duration,
     });
     return res;
@@ -121,7 +121,7 @@ export class WtfController {
     const result = await this.WtfService.addPlayer(addPlayerDto);
     const duration = Date.now() - start;
 
-    this.logger.log('addPlayer', {
+    this.logger.log('POST /player', {
       durationMs: duration,
     });
 
@@ -169,7 +169,7 @@ export class WtfController {
       }
       const duration = Date.now() - start;
 
-      this.logger.log('getPlayer', {
+      this.logger.log('GET /player', {
         durationMs: duration,
       });
       return res;
@@ -237,7 +237,7 @@ export class WtfController {
     }
     const duration = Date.now() - start;
 
-    this.logger.log('getPlayerStats', {
+    this.logger.log('GET /playerStats', {
       durationMs: duration,
     });
     return res;
@@ -262,7 +262,7 @@ export class WtfController {
 
     const duration = Date.now() - start;
 
-    this.logger.log('clientPerformanceLogs', {
+    this.logger.log('POST /clientPerformanceLogs', {
       durationMs: duration,
     });
 
@@ -288,7 +288,7 @@ export class WtfController {
 
     const duration = Date.now() - start;
 
-    this.logger.log('serverPerformanceLogs', {
+    this.logger.log('POST /serverPerformanceLogs', {
       durationMs: duration,
     });
 
