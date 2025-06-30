@@ -53,6 +53,7 @@ export class WtfController {
     const duration = Date.now() - start;
 
     this.logger.log('POST /matchSummary', {
+      start: start,
       durationMs: duration,
     });
     return res;
@@ -80,6 +81,7 @@ export class WtfController {
     const duration = Date.now() - start;
 
     this.logger.log('POST /matchMakingSummary', {
+      start: start,
       durationMs: duration,
     });
     return res;
@@ -100,6 +102,7 @@ export class WtfController {
     const duration = Date.now() - start;
 
     this.logger.log('POST /matchTelemetry', {
+      start: start,
       durationMs: duration,
     });
     return res;
@@ -122,6 +125,7 @@ export class WtfController {
     const duration = Date.now() - start;
 
     this.logger.log('POST /player', {
+      start: start,
       durationMs: duration,
     });
 
@@ -170,6 +174,7 @@ export class WtfController {
       const duration = Date.now() - start;
 
       this.logger.log('GET /player', {
+        start: start,
         durationMs: duration,
       });
       return res;
@@ -238,6 +243,7 @@ export class WtfController {
     const duration = Date.now() - start;
 
     this.logger.log('GET /playerStats', {
+      start: start,
       durationMs: duration,
     });
     return res;
@@ -263,6 +269,7 @@ export class WtfController {
     const duration = Date.now() - start;
 
     this.logger.log('POST /clientPerformanceLogs', {
+      start: start,
       durationMs: duration,
     });
 
@@ -289,6 +296,7 @@ export class WtfController {
     const duration = Date.now() - start;
 
     this.logger.log('POST /serverPerformanceLogs', {
+      start: start,
       durationMs: duration,
     });
 
