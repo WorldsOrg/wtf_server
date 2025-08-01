@@ -18,9 +18,10 @@ import {
   ApiExcludeEndpoint,
   ApiHeader,
 } from '@nestjs/swagger';
-import * as util from 'util';
 import { MatchMakingSummaryDto } from './dto/match.making.dto';
+import { LoggerService } from 'src/logger/logger.service';
 import { SteamGuard } from 'src/steam/steam.guard';
+import { MatchTelemetryDto } from './dto/match.telemetry.dto';
 
 @ApiTags('wtf') // Swagger group name
 @Controller('wtf')
@@ -31,7 +32,10 @@ import { SteamGuard } from 'src/steam/steam.guard';
 })
 @UseGuards(SteamGuard)
 export class WtfController {
-  constructor(private readonly WtfService: WtfService) {}
+  constructor(
+    private readonly WtfService: WtfService,
+    private readonly logger: LoggerService,
+  ) {}
 
   @Post('/matchSummary')
   @ApiOperation({
@@ -44,12 +48,14 @@ export class WtfController {
     description: 'Add a new match summary with player results',
   })
   async addMatchSummary(@Body() addMatchSummaryDto: AddMatchSummaryDto) {
-    console.log(
-      'add match summary called',
-      util.inspect(addMatchSummaryDto, { depth: null, colors: true }),
-    );
+    const start = Date.now();
     const res = await this.WtfService.addMatchSummary(addMatchSummaryDto);
-    console.log('add match summary response', res);
+    const duration = Date.now() - start;
+
+    this.logger.log('POST /matchSummary', {
+      start: start,
+      durationMs: duration,
+    });
     return res;
   }
 
@@ -66,14 +72,39 @@ export class WtfController {
   async addMatchMakingSummary(
     @Body() addMatchMakingSummaryDto: MatchMakingSummaryDto,
   ) {
-    console.log(
-      'add match making summary called',
-      util.inspect(addMatchMakingSummaryDto, { depth: null, colors: true }),
-    );
+    const start = Date.now();
+
     const res = await this.WtfService.addMatchMakingSummary(
       addMatchMakingSummaryDto,
     );
-    console.log('add match making summary response', res);
+
+    const duration = Date.now() - start;
+
+    this.logger.log('POST /matchMakingSummary', {
+      start: start,
+      durationMs: duration,
+    });
+    return res;
+  }
+
+  @Post('/matchTelemetry')
+  @ApiOperation({
+    summary: 'Add match telemetry data',
+    description: 'This is used to log match telemetry.',
+  })
+  @ApiBody({
+    type: MatchTelemetryDto,
+    description: 'Add a new match match telemetry summary',
+  })
+  async addMatchTelemetry(@Body() addMatchTelemetry: MatchTelemetryDto) {
+    const start = Date.now();
+    const res = await this.WtfService.addMatchTelemetry(addMatchTelemetry);
+    const duration = Date.now() - start;
+
+    this.logger.log('POST /matchTelemetry', {
+      start: start,
+      durationMs: duration,
+    });
     return res;
   }
 
@@ -89,8 +120,16 @@ export class WtfController {
     description: 'Add or update a player by SteamID or EpicID',
   })
   async addPlayer(@Body() addPlayerDto: AddPlayerDto) {
-    console.log('add player called', addPlayerDto);
-    return await this.WtfService.addPlayer(addPlayerDto);
+    const start = Date.now();
+    const result = await this.WtfService.addPlayer(addPlayerDto);
+    const duration = Date.now() - start;
+
+    this.logger.log('POST /player', {
+      start: start,
+      durationMs: duration,
+    });
+
+    return result;
   }
 
   @Get('/player')
@@ -115,14 +154,31 @@ export class WtfController {
     @Query('epicID') epicID?: string,
     @Query('steamID') steamID?: string,
   ) {
+    let res;
+    const start = Date.now();
+
     if (epicID && steamID) {
       throw new BadRequestException(
         'Only one of epicID or steamID can be provided.',
       );
     }
 
-    if (epicID) return await this.WtfService.getPlayerEpic(epicID);
-    if (steamID) return await this.WtfService.getPlayerSteam(steamID);
+    if (steamID || epicID) {
+      if (epicID) {
+        res = await this.WtfService.getPlayerEpic(epicID);
+      }
+
+      if (steamID) {
+        res = await this.WtfService.getPlayerSteam(steamID);
+      }
+      const duration = Date.now() - start;
+
+      this.logger.log('GET /player', {
+        start: start,
+        durationMs: duration,
+      });
+      return res;
+    }
 
     throw new BadRequestException('You must provide either epicID or steamID.');
   }
@@ -158,23 +214,39 @@ export class WtfController {
     @Query('steamID') steamID?: string,
     @Query('ids') ids?: string,
   ) {
+    let res;
+    const start = Date.now();
+
     const provided = [epicID, steamID, ids].filter(Boolean);
 
     if (provided.length === 0) {
-      throw new BadRequestException(
-        'You must provide one of epicID, steamID, or ids.',
-      );
+      const msg = 'You must provide one of epicID, steamID, or ids.';
+      throw new BadRequestException(msg);
     }
 
     if (provided.length > 1) {
-      throw new BadRequestException(
-        'Only one of epicID, steamID, or ids can be provided.',
-      );
+      const msg = 'Only one of epicID, steamID, or ids can be provided.';
+      throw new BadRequestException(msg);
     }
 
-    if (epicID) return await this.WtfService.getPlayerStatsByEpicID(epicID);
-    if (steamID) return await this.WtfService.getPlayerStatsBySteamID(steamID);
-    if (ids) return await this.WtfService.getPlayerStats(ids);
+    if (epicID) {
+      res = await this.WtfService.getPlayerStatsByEpicID(epicID);
+    }
+
+    if (steamID) {
+      res = await this.WtfService.getPlayerStatsBySteamID(steamID);
+    }
+
+    if (ids) {
+      res = await this.WtfService.getPlayerStats(ids);
+    }
+    const duration = Date.now() - start;
+
+    this.logger.log('GET /playerStats', {
+      start: start,
+      durationMs: duration,
+    });
+    return res;
   }
 
   @Post('/clientPerformanceLogs')
@@ -187,11 +259,21 @@ export class WtfController {
     description: 'Performance logs for a match',
   })
   async addClientPerformanceLogs(@Body() performanceLog: object) {
-    console.log('performance logs called', performanceLog);
-    return await this.WtfService.addPerformaceLog(
+    const start = Date.now();
+
+    const result = await this.WtfService.addPerformaceLog(
       performanceLog,
       'wtf_client_logs',
     );
+
+    const duration = Date.now() - start;
+
+    this.logger.log('POST /clientPerformanceLogs', {
+      start: start,
+      durationMs: duration,
+    });
+
+    return result;
   }
 
   @Post('/serverPerformanceLogs')
@@ -204,11 +286,21 @@ export class WtfController {
     description: 'Performance logs for a match',
   })
   async addServerPerformanceLogs(@Body() performanceLog: object) {
-    console.log('performance logs called', performanceLog);
-    return await this.WtfService.addPerformaceLog(
+    const start = Date.now();
+
+    const result = await this.WtfService.addPerformaceLog(
       performanceLog,
       'wtf_server_logs',
     );
+
+    const duration = Date.now() - start;
+
+    this.logger.log('POST /serverPerformanceLogs', {
+      start: start,
+      durationMs: duration,
+    });
+
+    return result;
   }
 
   @Get('/gameData')

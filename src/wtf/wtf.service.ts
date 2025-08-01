@@ -14,6 +14,7 @@ import {
   TotalPlayerStatsInput,
 } from './dto/player.statistics.dto';
 import { MatchMakingSummaryDto } from './dto/match.making.dto';
+import { MatchTelemetryDto } from './dto/match.telemetry.dto';
 
 @Injectable()
 export class WtfService {
@@ -30,6 +31,8 @@ export class WtfService {
   private devSteamIdsTable = 'DevSteamIds';
   private weaponsTable = 'WeaponStats';
   private weaponStatsTable = 'PlayerWeaponMatchStats';
+  private matchMakingSummaryTable = 'MatchMakingSummary';
+  private matchTelemetryTable = 'MatchTelemetry';
   private unrealEditorEpicID = 'unrealeditor';
   private schema = 'wtf_beta';
 
@@ -357,24 +360,20 @@ export class WtfService {
   async addPlayer(addPlayerDto: AddPlayerDto) {
     const currentTimestamp = new Date().toISOString();
 
-    // Normalize empty string values
     const normalizedEpicID =
       addPlayerDto.EpicID?.trim() === '' ? null : addPlayerDto.EpicID;
     const normalizedSteamID =
       addPlayerDto.SteamID?.trim() === '' ? null : addPlayerDto.SteamID;
 
-    // ❌ Require at least one ID
     if (!normalizedEpicID && !normalizedSteamID) {
       throw new Error('You must provide either SteamID or EpicID.');
     }
 
     try {
-      // 🔍 Check if SteamID is in DevSteamIds
       const isDev = normalizedSteamID
         ? this.devSteamIds.has(normalizedSteamID)
         : false;
 
-      // Look for existing player by EpicID or SteamID
       let query = this.supabase
         .schema(this.schema)
         .from(this.playerTable)
@@ -403,7 +402,6 @@ export class WtfService {
       };
 
       if (existingPlayers.length > 0) {
-        // 🔄 Player exists → Update
         const existing = existingPlayers[0];
 
         const { error: updateError } = await this.supabase
@@ -414,7 +412,6 @@ export class WtfService {
 
         if (updateError) throw updateError;
 
-        // 🕒 Insert login history
         await this.supabase
           .schema(this.schema)
           .from(this.loginHistoryTable)
@@ -423,7 +420,6 @@ export class WtfService {
             GameVersion: addPlayerDto.GameVersion,
           });
 
-        // 🎯 Insert PlayerStatistics if this is the first time EpicID is being set
         const hadNoEpicIDBefore = !existing.EpicID && normalizedEpicID;
 
         if (hadNoEpicIDBefore) {
@@ -438,21 +434,28 @@ export class WtfService {
           if (statsInsertError) throw statsInsertError;
         }
 
-        return { message: 'Player updated and login recorded' };
+        return {
+          EpicID: normalizedEpicID,
+          Username: existing.Username || '',
+          Region: existing.Region || '',
+          GameVersion: addPlayerDto.GameVersion,
+          LoginTimestamp: currentTimestamp,
+          SteamID: normalizedSteamID,
+          Type: isDev ? 'dev' : existing.Type || null,
+          PlayerID: existing.PlayerID,
+        };
       } else {
-        // 🆕 New player → Insert
         const insertResponse = await this.supabase
           .schema(this.schema)
           .from(this.playerTable)
           .insert(updateData)
-          .select('PlayerID, EpicID')
+          .select('PlayerID, Username, Region')
           .single();
 
         if (insertResponse.error) throw insertResponse.error;
 
         const newPlayerID = insertResponse.data.PlayerID;
 
-        // 🕒 Insert login history
         await this.supabase
           .schema(this.schema)
           .from(this.loginHistoryTable)
@@ -461,7 +464,6 @@ export class WtfService {
             GameVersion: addPlayerDto.GameVersion,
           });
 
-        // 🎯 If EpicID is present on new player, insert PlayerStatistics
         if (normalizedEpicID) {
           const { error: statsInsertError } = await this.supabase
             .schema(this.schema)
@@ -474,9 +476,20 @@ export class WtfService {
           if (statsInsertError) throw statsInsertError;
         }
 
-        return { message: 'New player created and login recorded' };
+        return {
+          EpicID: normalizedEpicID,
+          Username: insertResponse.data.Username || '',
+          Region: insertResponse.data.Region || '',
+          GameVersion: addPlayerDto.GameVersion,
+          LoginTimestamp: currentTimestamp,
+          SteamID: normalizedSteamID,
+          Type: isDev ? 'dev' : null,
+          PlayerID: newPlayerID,
+        };
       }
     } catch (error) {
+      console.error('Error during addPlayer: ', error);
+      console.error('add player request body: \n', addPlayerDto);
       return { message: error.message || 'An error occurred' };
     }
   }
@@ -517,11 +530,36 @@ export class WtfService {
     }
   }
 
+  async addMatchTelemetry(addMatchTelemetryData: MatchTelemetryDto) {
+    try {
+      const { error } = await this.supabase
+        .schema(this.schema)
+        .from(this.matchTelemetryTable)
+        .insert({
+          MatchID: addMatchTelemetryData.MatchId,
+          TelemetryEvents: addMatchTelemetryData.TelemetryEvents,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return { message: 'Match telemetry data added successfully' };
+    } catch (error) {
+      console.error('Error in addMatchTelemetry:', error);
+      console.error(
+        'add match telemetry request body: \n',
+        addMatchTelemetryData,
+      );
+      return { message: error.message };
+    }
+  }
+
   async addMatchMakingSummary(addMatchMakingSummary: MatchMakingSummaryDto) {
     try {
       const { error } = await this.supabase
         .schema(this.schema)
-        .from('MatchMakingSummary')
+        .from(this.matchMakingSummaryTable)
         .insert([addMatchMakingSummary])
         .select()
         .single();
@@ -531,11 +569,16 @@ export class WtfService {
       return { message: 'MatchMakingSummary added successfully' };
     } catch (error) {
       console.error('Error in addMatchMakingSummary:', error);
+      console.error(
+        'match making summary request body: /n',
+        addMatchMakingSummary,
+      );
       return { message: error.message };
     }
   }
 
   async addMatchSummary(addMatchSummaryDto: AddMatchSummaryDto) {
+    let matchInserted = false;
     try {
       // 1. Insert match summary
       const { error: matchError } = await this.supabase
@@ -548,6 +591,8 @@ export class WtfService {
       if (matchError) {
         throw new Error(`Match summary insert failed: ${matchError.message}`);
       }
+
+      matchInserted = true;
 
       const matchID = addMatchSummaryDto.MatchSummary.MatchID;
       const resolvedResults: ResolvedPlayerDto[] = [];
@@ -667,9 +712,10 @@ export class WtfService {
       };
     } catch (error) {
       console.error('Error in addMatchSummary:', error);
+      console.error('add match summary request body: \n', addMatchSummaryDto);
 
-      // Optional rollback if match insert succeeded
-      if (addMatchSummaryDto.MatchSummary?.MatchID) {
+      // Rollback if there is an error for data associated with matchSummary
+      if (matchInserted && addMatchSummaryDto.MatchSummary?.MatchID) {
         await this.supabase
           .schema(this.schema)
           .from(this.matchSummaryTable)
