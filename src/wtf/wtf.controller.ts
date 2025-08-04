@@ -18,7 +18,7 @@ import {
   ApiExcludeEndpoint,
   ApiHeader,
 } from '@nestjs/swagger';
-import { MatchMakingSummaryDto } from './dto/match.making.dto';
+import { MatchMakingLogsDto, MatchMakingSummaryDto } from './dto/match.making.dto';
 import { LoggerService } from 'src/logger/logger.service';
 import { SteamGuard } from 'src/steam/steam.guard';
 import { MatchTelemetryDto } from './dto/match.telemetry.dto';
@@ -81,6 +81,27 @@ export class WtfController {
     const duration = Date.now() - start;
 
     this.logger.log('POST /matchMakingSummary', {
+      start: start,
+      durationMs: duration,
+    });
+    return res;
+  }
+
+  @Post('/matchMakingLogs')
+  @ApiOperation({
+    summary: 'Add match telemetry data',
+    description: 'This is used to log match telemetry.',
+  })
+  @ApiBody({
+    type: MatchMakingLogsDto,
+    description: 'Add a new match making logs',
+  })
+  async addMatchMakingLogs(@Body() addMatchMakingLogs: MatchMakingLogsDto) {
+    const start = Date.now();
+    const res = await this.WtfService.addMatchMakingLogs(addMatchMakingLogs);
+    const duration = Date.now() - start;
+
+    this.logger.log('POST /matchMakingLogs', {
       start: start,
       durationMs: duration,
     });
