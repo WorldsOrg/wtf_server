@@ -19,3 +19,26 @@ export class MatchMakingSummaryDto {
   @ApiProperty()
   MMCancelled: boolean;
 }
+
+export class MatchMakingLogsDto {
+  @ApiProperty()
+  SteamID: string;
+
+  @ApiProperty()
+  UserRegion: string;
+
+  @ApiProperty()
+  StepName: string;
+
+  @ApiProperty()
+  CurrentStatus: string;
+
+  @ApiProperty()
+  CurrentDetail: string;
+
+  @ApiProperty()
+  CurrentProgress: number;
+
+  @ApiProperty()
+  TimeQueued: string;
+}
