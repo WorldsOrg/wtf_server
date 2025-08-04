@@ -13,7 +13,7 @@ import {
   MatchPlayerStatsInput,
   TotalPlayerStatsInput,
 } from './dto/player.statistics.dto';
-import { MatchMakingSummaryDto } from './dto/match.making.dto';
+import { MatchMakingLogsDto, MatchMakingSummaryDto } from './dto/match.making.dto';
 import { MatchTelemetryDto } from './dto/match.telemetry.dto';
 
 @Injectable()
@@ -995,6 +995,21 @@ export class WtfService {
       console.log('Updated WtfPlayers with dev status.');
     } catch (error) {
       console.error('Error updating dev players:', error);
+    }
+  }
+
+  async addMatchMakingLogs(addMatchMakingLogs: MatchMakingLogsDto) {
+    try {
+      const { error } = await this.supabase
+        .schema('wtf_beta')
+        .from('wtf_matchmaking_logs')
+        .insert(addMatchMakingLogs);
+
+      if (error) throw error;
+
+      return { message: 'Match making logs added successfully' };
+    } catch (error) {
+      console.error('Error in addMatchMakingLogs:', error);
     }
   }
 }
