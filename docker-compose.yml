@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  wtf-server:
+    build: .
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=production
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - STEAM_API_KEY=${STEAM_API_KEY}
+      - STEAM_APP_ID=${STEAM_APP_ID}
+      - ENGINE_API_KEY=${ENGINE_API_KEY}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3005/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

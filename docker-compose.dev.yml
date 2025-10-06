@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  wtf-server-dev:
+    build: .
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=development
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - STEAM_API_KEY=${STEAM_API_KEY}
+      - STEAM_APP_ID=${STEAM_APP_ID}
+      - ENGINE_API_KEY=${ENGINE_API_KEY}
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: yarn start:dev
+    restart: unless-stopped
