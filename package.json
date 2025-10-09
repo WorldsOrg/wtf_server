@@ -17,7 +17,16 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "docker:build": "docker build -t wtf-game-api .",
+    "docker:build:dev": "docker build -f Dockerfile.dev -t wtf-game-api:dev .",
+    "docker:run": "docker run -p 3005:3005 --env-file .env wtf-game-api",
+    "docker:run:dev": "docker run -p 3005:3005 --env-file .env -v $(pwd):/app -v /app/node_modules wtf-game-api:dev",
+    "docker:compose:up": "docker-compose up -d",
+    "docker:compose:down": "docker-compose down",
+    "docker:compose:dev": "docker-compose --profile dev up -d",
+    "docker:logs": "docker-compose logs -f app",
+    "docker:clean": "docker system prune -f && docker volume prune -f"
   },
   "dependencies": {
     "@nestjs/axios": "^3.0.3",
@@ -30,6 +39,7 @@
     "@supabase/supabase-js": "^2.47.16",
     "axios": "^1.6.0",
     "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {

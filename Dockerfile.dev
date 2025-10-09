@@ -1,0 +1,29 @@
+# Development Dockerfile for NestJS application
+
+FROM node:18-alpine AS development
+
+# Set working directory
+WORKDIR /app
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nestjs -u 1001
+
+# Copy package files
+COPY package.json yarn.lock ./
+
+# Install all dependencies (including dev dependencies)
+RUN yarn install --frozen-lockfile
+
+# Change ownership of the app directory to nestjs user
+RUN chown -R nestjs:nodejs /app
+USER nestjs
+
+# Copy source code (this will be overridden by volume mount in development)
+COPY --chown=nestjs:nodejs . .
+
+# Expose port
+EXPOSE 3005
+
+# Start the application in development mode
+CMD ["yarn", "start:dev"]
