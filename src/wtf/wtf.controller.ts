@@ -20,17 +20,10 @@ import {
 } from '@nestjs/swagger';
 import { MatchMakingLogsDto, MatchMakingSummaryDto } from './dto/match.making.dto';
 import { LoggerService } from 'src/logger/logger.service';
-import { SteamGuard } from 'src/steam/steam.guard';
 import { MatchTelemetryDto } from './dto/match.telemetry.dto';
 
 @ApiTags('wtf') // Swagger group name
 @Controller('wtf')
-@ApiHeader({
-  name: 'ticket',
-  description: 'Steam session ticket',
-  required: true,
-})
-@UseGuards(SteamGuard)
 export class WtfController {
   constructor(
     private readonly WtfService: WtfService,

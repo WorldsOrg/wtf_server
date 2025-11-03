@@ -1,21 +1,41 @@
 version: '3.8'
 
 services:
-  wtf-server:
-    build: .
-    ports:
-      - "3005:3005"
-    environment:
-      - NODE_ENV=production
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - STEAM_API_KEY=${STEAM_API_KEY}
-      - STEAM_APP_ID=${STEAM_APP_ID}
-      - ENGINE_API_KEY=${ENGINE_API_KEY}
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3005/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+wtf-server:
+# 1. Build the image using the local Dockerfile
+build: .
+
+# 2. Expose the port (only on the host ingress)
+# Note: When using Swarm, the port is published via the routing mesh 
+ports:
+  - "3005:3005"
+  
+environment:
+  - NODE_ENV=production
+  - SUPABASE_URL=${SUPABASE_URL}
+  - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+  - STEAM_API_KEY=${STEAM_API_KEY}
+  - STEAM_APP_ID=${STEAM_APP_ID}
+  - ENGINE_API_KEY=${ENGINE_API_KEY}
+  
+# 3. Use the 'deploy' section to manage production behavior
+deploy:
+  # Specify the desired number of instances (replicas)
+  replicas: 4
+  # Restart policy for the service
+  restart_policy:
+    condition: on-failure
+  # Resource limits are highly recommended for production
+  resources:
+    limits:
+      memory: 512M # Example limit: 512MB per replica
+      cpus: '0.5'   # Example limit: 50% of a CPU core per replica
+
+# 4. Standard settings
+restart: unless-stopped
+healthcheck:
+  test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3005/"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
