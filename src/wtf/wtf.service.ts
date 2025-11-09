@@ -789,7 +789,8 @@ export class WtfService {
           return acc;
         }, {}),
         WeaponStats: weaponStatsData.reduce((acc, weapon) => {
-          acc[weapon.id] = { ...weapon };
+          const { id, ...weaponWithoutId } = weapon;
+          acc[id] = weaponWithoutId;
           return acc;
         }, {}),
         XPRewards: xpRewardsData,
