@@ -738,6 +738,7 @@ export class WtfService {
       ] = await Promise.all([
         this.supabase.schema(this.schema).from('LevelProgression').select('*'),
         this.supabase.schema(this.schema).from('WeaponStats').select(`
+          "id",
           "Name",
           "MovementSpeed",
           "ADSSpeed",
