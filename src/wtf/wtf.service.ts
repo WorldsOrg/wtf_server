@@ -738,6 +738,7 @@ export class WtfService {
       ] = await Promise.all([
         this.supabase.schema(this.schema).from('LevelProgression').select('*'),
         this.supabase.schema(this.schema).from('WeaponStats').select(`
+          "id",
           "Name",
           "MovementSpeed",
           "ADSSpeed",
@@ -788,7 +789,7 @@ export class WtfService {
           return acc;
         }, {}),
         WeaponStats: weaponStatsData.reduce((acc, weapon) => {
-          acc[weapon.Name] = { ...weapon };
+          acc[weapon.id] = { ...weapon };
           return acc;
         }, {}),
         XPRewards: xpRewardsData,
